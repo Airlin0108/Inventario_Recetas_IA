@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.database import create_tables
-from app.routers import users, ingredients, recipes, ratings
+from app.routers import users, ingredients, recipes, ratings, frontend
 
 app = FastAPI(
     title=os.getenv("APP_NAME", "Inventario Recetas IA"),
@@ -31,6 +31,7 @@ app.include_router(users.router)
 app.include_router(ingredients.router)
 app.include_router(recipes.router)
 app.include_router(ratings.router)
+app.include_router(frontend.router)
 
 
 @app.on_event("startup")
