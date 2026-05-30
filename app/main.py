@@ -1,7 +1,9 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 from app.database import create_tables
 from app.routers import users, ingredients, recipes, ratings, frontend
@@ -27,6 +29,8 @@ app.add_middleware(
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+templates = Jinja2Templates(directory="templates")
+
 app.include_router(users.router)
 app.include_router(ingredients.router)
 app.include_router(recipes.router)
@@ -39,13 +43,9 @@ def on_startup():
     create_tables()
 
 
-@app.get("/", tags=["Raiz"])
-def root():
-    return {
-        "mensaje": "Bienvenido a Inventario Recetas IA",
-        "documentacion": "/docs",
-        "version": "1.0.0",
-    }
+@app.get("/", response_class=HTMLResponse, tags=["Raiz"], include_in_schema=False)
+async def root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get("/health", tags=["Raiz"])
