@@ -80,6 +80,21 @@ class RecetaResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class RecetaDetalleResponse(BaseModel):
+    id: int
+    nombre_plato: str
+    ingredientes: List[dict]
+    pasos_preparacion: List[str]
+    tiempo_estimado: str
+    nivel_dificultad: str
+    fecha_generacion: datetime
+    guardada: bool
+    calificacion_promedio: Optional[float] = None
+    total_calificaciones: int = 0
+
+    model_config = {"from_attributes": False}
+
+
 class RecetaGenerada(BaseModel):
     nombre_plato: str
     ingredientes: List[dict]
