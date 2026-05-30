@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Recetas - Inventario Recetas IA{% endblock %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <h2 style="color:#2d6a4f;">Mis Recetas</h2>
+    <span id="bienvenida" style="color:#555; font-size:0.9rem;"></span>
+</div>
+
+<div id="msg-global"></div>
+
+<div class="card" style="text-align:center; padding:1.5rem;">
+    <p style="color:#555; margin-bottom:1rem;">La IA generará una receta usando los ingredientes de tu inventario actual.</p>
+    <button class="btn btn-primary" onclick="generarReceta()" id="btn-generar" style="font-size:1rem; padding:0.7rem 2rem;">
+        ✨ Generar nueva receta con IA
+    </button>
+    <div id="spinner" style="display:none; margin-top:0.8rem; color:#2d6a4f; font-size:0.9rem;">
+        Consultando al modelo de lenguaje... ⏳
+    </div>
+</div>
+
+<!-- Detalle de receta recién generada -->
+<div id="receta-nueva" style="display:none;" class="card">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem;">
+        <h3 id="rn-nombre" style="color:#2d6a4f; font-size:1.3rem;"></h3>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+            <span id="rn-dificultad" class="badge"></span>
+            <span id="rn-tiempo" style="color:#888; font-size:0.85rem;"></span>
+        </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1rem;">
+        <div>
+            <strong>Ingredientes:</strong>
+            <ul id="rn-ingredientes" style="margin-top:0.4rem; padding-left:1.2rem; color:#555; font-size:0.9rem;"></ul>
+        </div>
+        <div>
+            <strong>Pasos:</strong>
+            <ol id="rn-pasos" style="margin-top:0.4rem; padding-left:1.2rem; color:#555; font-size:0.9rem; line-height:1.6;"></ol>
+        </div>
+    </div>
+    <div style="margin-top:1rem; display:flex; gap:0.5rem; align-items:center;">
+        <span style="font-size:0.9rem;">Califica esta receta:</span>
+        <div id="rn-estrellas"></div>
+        <button class="btn btn-danger" style="margin-left:auto; font-size:0.8rem;" onclick="eliminarReceta(window._recetaId, true)">Eliminar</button>
+    </div>
+</div>
+
+<!-- Listado de recetas guardadas -->
+<div class="card">
+    <h3 style="font-size:1rem; margin-bottom:1rem;">Recetas guardadas (<span id="total">0</span>)</h3>
+    <div id="lista-recetas">
+        <p style="color:#888; text-align:center; padding:1rem;">Cargando...</p>
+    </div>
+</div>
+
+<style>
+.badge { padding:0.25rem 0.6rem; border-radius:12px; font-size:0.78rem; font-weight:600; }
+.badge-facil   { background:#dcfce7; color:#166534; }
+.badge-medio   { background:#fef9c3; color:#854d0e; }
+.badge-dificil { background:#fee2e2; color:#991b1b; }
+.receta-card { border:1px solid #e5e7eb; border-radius:8px; padding:1rem; margin-bottom:0.8rem; }
+.receta-card summary { cursor:pointer; font-weight:600; color:#2d6a4f; list-style:none; display:flex; justify-content:space-between; align-items:center; }
+.receta-card summary::-webkit-details-marker { display:none; }
+.estrellas span { cursor:pointer; font-size:1.3rem; color:#d1d5db; transition:color 0.1s; }
+.estrellas span.activa { color:#f59e0b; }
+</style>
+
+<script>
+const TOKEN = localStorage.getItem('token');
+if (!TOKEN) window.location.href = '/ui/login';
+
+document.getElementById('bienvenida').textContent =
+    'Hola, ' + (localStorage.getItem('nombre') || 'usuario');
+
+window._recetaId = null;
+
+async function api(url, opts = {}) {
+    opts.headers = { ...(opts.headers || {}), 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' };
+    const r = await fetch(url, opts);
+    if (r.status === 401) { localStorage.clear(); window.location.href = '/ui/login'; }
+    return r;
+}
+
+function mostrarMsg(texto, ok) {
+    const el = document.getElementById('msg-global');
+    el.className = ok ? 'msg-ok' : 'msg-error';
+    el.textContent = texto;
+    setTimeout(() => el.textContent = '', 4000);
+}
+
+function badgeClass(nivel) {
+    const n = (nivel || '').toLowerCase();
+    if (n.includes('f')) return 'badge-facil';
+    if (n.includes('m')) return 'badge-medio';
+    return 'badge-dificil';
+}
+
+function renderEstrellas(contenedorId, recetaId, actual = 0) {
+    const c = document.getElementById(contenedorId);
+    c.className = 'estrellas';
+    c.innerHTML = [1,2,3,4,5].map(n =>
+        `<span class="${n <= actual ? 'activa' : ''}" onclick="calificar(${recetaId}, ${n}, '${contenedorId}')">${n <= actual ? '★' : '☆'}</span>`
+    ).join('');
+}
+
+async function calificar(recetaId, puntuacion, contenedorId) {
+    const r = await api(`/recipes/${recetaId}/rate`, {
+        method: 'POST',
+        body: JSON.stringify({ puntuacion })
+    });
+    if (r.ok) {
+        mostrarMsg(`Calificaste con ${puntuacion} ★`, true);
+        renderEstrellas(contenedorId, recetaId, puntuacion);
+        cargarRecetas();
+    }
+}
+
+function mostrarRecetaNueva(receta) {
+    window._recetaId = receta.id;
+    document.getElementById('rn-nombre').textContent = receta.nombre_plato;
+    document.getElementById('rn-tiempo').textContent = '⏱ ' + receta.tiempo_estimado;
+    const badge = document.getElementById('rn-dificultad');
+    badge.textContent = receta.nivel_dificultad;
+    badge.className = 'badge ' + badgeClass(receta.nivel_dificultad);
+
+    document.getElementById('rn-ingredientes').innerHTML =
+        receta.ingredientes.map(i => `<li>${i.nombre} — ${i.cantidad} ${i.unidad || ''}</li>`).join('');
+    document.getElementById('rn-pasos').innerHTML =
+        receta.pasos_preparacion.map(p => `<li>${p}</li>`).join('');
+
+    document.getElementById('rn-estrellas').id = `estrellas-new-${receta.id}`;
+    renderEstrellas(`estrellas-new-${receta.id}`, receta.id, receta.calificacion_promedio || 0);
+
+    document.getElementById('receta-nueva').style.display = 'block';
+    document.getElementById('receta-nueva').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function generarReceta() {
+    const btn = document.getElementById('btn-generar');
+    const spinner = document.getElementById('spinner');
+    btn.disabled = true;
+    spinner.style.display = 'block';
+    document.getElementById('receta-nueva').style.display = 'none';
+
+    const r = await api('/recipes/generate', { method: 'POST' });
+    btn.disabled = false;
+    spinner.style.display = 'none';
+
+    if (r.ok) {
+        const receta = await r.json();
+        mostrarRecetaNueva(receta);
+        cargarRecetas();
+    } else {
+        const err = await r.json();
+        mostrarMsg(err.detail || 'Error al generar receta', false);
+    }
+}
+
+async function eliminarReceta(id, esNueva = false) {
+    if (!confirm('¿Eliminar esta receta?')) return;
+    const r = await api(`/recipes/${id}`, { method: 'DELETE' });
+    if (r.ok) {
+        mostrarMsg('Receta eliminada', true);
+        if (esNueva) document.getElementById('receta-nueva').style.display = 'none';
+        cargarRecetas();
+    }
+}
+
+async function cargarRecetas() {
+    const r = await api('/recipes/');
+    const lista = await r.json();
+    document.getElementById('total').textContent = lista.length;
+
+    const contenedor = document.getElementById('lista-recetas');
+    if (lista.length === 0) {
+        contenedor.innerHTML = '<p style="color:#888;text-align:center;padding:1rem;">Aún no tienes recetas guardadas.</p>';
+        return;
+    }
+
+    contenedor.innerHTML = lista.map(rec => {
+        const promedio = rec.calificacion_promedio
+            ? `★ ${rec.calificacion_promedio} (${rec.total_calificaciones})`
+            : 'Sin calificar';
+        return `
+        <details class="receta-card">
+            <summary>
+                <span>${rec.nombre_plato}</span>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                    <span class="badge ${badgeClass(rec.nivel_dificultad)}">${rec.nivel_dificultad}</span>
+                    <span style="color:#f59e0b; font-size:0.85rem;">${promedio}</span>
+                    <span style="color:#888; font-size:0.75rem;">▼</span>
+                </div>
+            </summary>
+            <div style="margin-top:0.8rem; display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                <div>
+                    <strong>Ingredientes:</strong>
+                    <ul style="margin-top:0.3rem; padding-left:1.2rem; color:#555; font-size:0.88rem;">
+                        ${rec.ingredientes.map(i => `<li>${i.nombre} — ${i.cantidad} ${i.unidad || ''}</li>`).join('')}
+                    </ul>
+                </div>
+                <div>
+                    <strong>Pasos:</strong>
+                    <ol style="margin-top:0.3rem; padding-left:1.2rem; color:#555; font-size:0.88rem; line-height:1.6;">
+                        ${rec.pasos_preparacion.map(p => `<li>${p}</li>`).join('')}
+                    </ol>
+                </div>
+            </div>
+            <div style="margin-top:0.8rem; display:flex; gap:0.5rem; align-items:center;">
+                <span style="font-size:0.85rem; color:#555;">⏱ ${rec.tiempo_estimado}</span>
+                <div id="estrellas-${rec.id}" style="margin-left:auto;"></div>
+                <button class="btn btn-danger" onclick="eliminarReceta(${rec.id})" style="padding:0.25rem 0.7rem; font-size:0.8rem;">Eliminar</button>
+            </div>
+        </details>`;
+    }).join('');
+
+    lista.forEach(rec => {
+        renderEstrellas(`estrellas-${rec.id}`, rec.id, rec.calificacion_promedio || 0);
+    });
+}
+
+cargarRecetas();
+</script>
+{% endblock %}

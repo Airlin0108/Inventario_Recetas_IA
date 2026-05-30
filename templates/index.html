@@ -4,8 +4,13 @@
 <div class="card" style="text-align:center; padding: 2.5rem;">
     <h2 style="font-size:1.8rem; color:#2d6a4f; margin-bottom:0.5rem;">Genera recetas con tus ingredientes</h2>
     <p style="color:#666; margin-bottom:1.5rem;">Registra lo que tienes en casa y nuestra IA crea recetas personalizadas para ti.</p>
-    <a href="/ui/ingredients" class="btn btn-primary" style="margin-right:0.5rem;">Gestionar Ingredientes</a>
-    <a href="/ui/recipes" class="btn btn-primary">Ver mis Recetas</a>
+    <div id="cta-guest">
+        <a href="/ui/login" class="btn btn-primary" style="font-size:1rem; padding:0.7rem 2rem;">Comenzar ahora</a>
+    </div>
+    <div id="cta-auth" style="display:none;">
+        <a href="/ui/ingredients" class="btn btn-primary" style="margin-right:0.5rem;">Gestionar Ingredientes</a>
+        <a href="/ui/recipes" class="btn btn-primary">Ver mis Recetas</a>
+    </div>
 </div>
 
 <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:1rem; margin-top:1rem;">
@@ -25,4 +30,11 @@
         <p style="font-size:0.9rem; color:#666;">Conserva las recetas que te gusten y califícalas del 1 al 5.</p>
     </div>
 </div>
+
+<script>
+if (localStorage.getItem('token')) {
+    document.getElementById('cta-guest').style.display = 'none';
+    document.getElementById('cta-auth').style.display = 'block';
+}
+</script>
 {% endblock %}

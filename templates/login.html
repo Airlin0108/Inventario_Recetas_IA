@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Iniciar sesión - Inventario Recetas IA{% endblock %}
+{% block content %}
+<div class="card" style="max-width:440px; margin:2rem auto;">
+    <div id="tab-bar" style="display:flex; gap:0.5rem; margin-bottom:1.5rem;">
+        <button class="btn btn-primary" id="btn-login-tab" onclick="mostrarTab('login')" style="flex:1;">Iniciar sesión</button>
+        <button class="btn" id="btn-reg-tab" onclick="mostrarTab('registro')" style="flex:1; background:#e5e7eb; color:#333;">Registrarse</button>
+    </div>
+
+    <!-- LOGIN -->
+    <form id="form-login" onsubmit="login(event)">
+        <div id="msg-login"></div>
+        <label>Correo electrónico</label>
+        <input type="email" id="login-email" required placeholder="tu@email.com">
+        <label>Contraseña</label>
+        <input type="password" id="login-pass" required placeholder="••••••••">
+        <button type="submit" class="btn btn-primary" style="width:100%; margin-top:1rem;">Entrar</button>
+    </form>
+
+    <!-- REGISTRO -->
+    <form id="form-registro" onsubmit="registrar(event)" style="display:none;">
+        <div id="msg-registro"></div>
+        <label>Nombre completo</label>
+        <input type="text" id="reg-nombre" required placeholder="Tu nombre">
+        <label>Correo electrónico</label>
+        <input type="email" id="reg-email" required placeholder="tu@email.com">
+        <label>Contraseña <small style="color:#888;">(mín. 8 caracteres, debe incluir un número)</small></label>
+        <input type="password" id="reg-pass" required placeholder="••••••••">
+        <button type="submit" class="btn btn-primary" style="width:100%; margin-top:1rem;">Crear cuenta</button>
+    </form>
+</div>
+
+<script>
+function mostrarTab(tab) {
+    const esLogin = tab === 'login';
+    document.getElementById('form-login').style.display    = esLogin ? 'block' : 'none';
+    document.getElementById('form-registro').style.display = esLogin ? 'none'  : 'block';
+    document.getElementById('btn-login-tab').style.background = esLogin ? '#2d6a4f' : '#e5e7eb';
+    document.getElementById('btn-login-tab').style.color      = esLogin ? 'white'   : '#333';
+    document.getElementById('btn-reg-tab').style.background   = esLogin ? '#e5e7eb' : '#2d6a4f';
+    document.getElementById('btn-reg-tab').style.color        = esLogin ? '#333'    : 'white';
+}
+
+function mostrarMsg(id, texto, ok) {
+    const el = document.getElementById(id);
+    el.className = ok ? 'msg-ok' : 'msg-error';
+    el.textContent = texto;
+}
+
+async function login(e) {
+    e.preventDefault();
+    const resp = await fetch('/auth/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            email: document.getElementById('login-email').value,
+            password: document.getElementById('login-pass').value
+        })
+    });
+    const datos = await resp.json();
+    if (resp.ok) {
+        localStorage.setItem('token', datos.access_token);
+        localStorage.setItem('nombre', datos.usuario.nombre);
+        window.location.href = '/ui/ingredients';
+    } else {
+        mostrarMsg('msg-login', datos.detail || 'Error al iniciar sesión', false);
+    }
+}
+
+async function registrar(e) {
+    e.preventDefault();
+    const resp = await fetch('/auth/register', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            nombre:   document.getElementById('reg-nombre').value,
+            email:    document.getElementById('reg-email').value,
+            password: document.getElementById('reg-pass').value
+        })
+    });
+    const datos = await resp.json();
+    if (resp.ok) {
+        mostrarMsg('msg-registro', 'Cuenta creada. Ahora inicia sesión.', true);
+        mostrarTab('login');
+    } else {
+        const detalle = datos.detail?.[0]?.msg || datos.detail || 'Error al registrarse';
+        mostrarMsg('msg-registro', detalle, false);
+    }
+}
+</script>
+{% endblock %}
