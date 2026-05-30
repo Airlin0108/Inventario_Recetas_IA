@@ -1,91 +1,110 @@
 {% extends "base.html" %}
-{% block title %}Iniciar sesión - Inventario Recetas IA{% endblock %}
+{% block title %}Acceder - Inventario Recetas IA{% endblock %}
 {% block content %}
-<div class="card" style="max-width:440px; margin:2rem auto;">
-    <div id="tab-bar" style="display:flex; gap:0.5rem; margin-bottom:1.5rem;">
-        <button class="btn btn-primary" id="btn-login-tab" onclick="mostrarTab('login')" style="flex:1;">Iniciar sesión</button>
-        <button class="btn" id="btn-reg-tab" onclick="mostrarTab('registro')" style="flex:1; background:#e5e7eb; color:#333;">Registrarse</button>
+
+<div class="card" style="max-width:430px; margin:1.5rem auto;">
+    <h2 class="section-title" style="text-align:center; margin-bottom:0.3rem;">Bienvenido</h2>
+    <p class="muted" style="text-align:center; margin-bottom:1.2rem;">Inicia sesión o crea tu cuenta para empezar</p>
+
+    <div class="tabs">
+        <button class="tab activa" id="tab-login" onclick="mostrarTab('login')">Iniciar sesión</button>
+        <button class="tab" id="tab-reg" onclick="mostrarTab('registro')">Registrarse</button>
     </div>
 
     <!-- LOGIN -->
     <form id="form-login" onsubmit="login(event)">
-        <div id="msg-login"></div>
         <label>Correo electrónico</label>
-        <input type="email" id="login-email" required placeholder="tu@email.com">
+        <input type="email" id="login-email" required placeholder="tu@correo.com" autocomplete="email">
         <label>Contraseña</label>
-        <input type="password" id="login-pass" required placeholder="••••••••">
-        <button type="submit" class="btn btn-primary" style="width:100%; margin-top:1rem;">Entrar</button>
+        <input type="password" id="login-pass" required placeholder="••••••••" autocomplete="current-password">
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top:1.3rem;" id="btn-login">Entrar</button>
     </form>
 
     <!-- REGISTRO -->
     <form id="form-registro" onsubmit="registrar(event)" style="display:none;">
-        <div id="msg-registro"></div>
         <label>Nombre completo</label>
-        <input type="text" id="reg-nombre" required placeholder="Tu nombre">
+        <input type="text" id="reg-nombre" required placeholder="Tu nombre" minlength="2" autocomplete="name">
         <label>Correo electrónico</label>
-        <input type="email" id="reg-email" required placeholder="tu@email.com">
-        <label>Contraseña <small style="color:#888;">(mín. 8 caracteres, debe incluir un número)</small></label>
-        <input type="password" id="reg-pass" required placeholder="••••••••">
-        <button type="submit" class="btn btn-primary" style="width:100%; margin-top:1rem;">Crear cuenta</button>
+        <input type="email" id="reg-email" required placeholder="tu@correo.com" autocomplete="email">
+        <label>Contraseña</label>
+        <input type="password" id="reg-pass" required placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+        <p class="muted" style="margin-top:0.4rem; font-size:0.78rem;">Debe tener al menos 8 caracteres e incluir un número.</p>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top:1.1rem;" id="btn-reg">Crear cuenta</button>
     </form>
 </div>
 
+{% endblock %}
+{% block scripts %}
 <script>
-function mostrarTab(tab) {
-    const esLogin = tab === 'login';
-    document.getElementById('form-login').style.display    = esLogin ? 'block' : 'none';
-    document.getElementById('form-registro').style.display = esLogin ? 'none'  : 'block';
-    document.getElementById('btn-login-tab').style.background = esLogin ? '#2d6a4f' : '#e5e7eb';
-    document.getElementById('btn-login-tab').style.color      = esLogin ? 'white'   : '#333';
-    document.getElementById('btn-reg-tab').style.background   = esLogin ? '#e5e7eb' : '#2d6a4f';
-    document.getElementById('btn-reg-tab').style.color        = esLogin ? '#333'    : 'white';
-}
+    // Si ya hay sesión, ir directo a ingredientes
+    if (localStorage.getItem('token')) window.location.href = '/ui/ingredients';
 
-function mostrarMsg(id, texto, ok) {
-    const el = document.getElementById(id);
-    el.className = ok ? 'msg-ok' : 'msg-error';
-    el.textContent = texto;
-}
-
-async function login(e) {
-    e.preventDefault();
-    const resp = await fetch('/auth/login', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            email: document.getElementById('login-email').value,
-            password: document.getElementById('login-pass').value
-        })
-    });
-    const datos = await resp.json();
-    if (resp.ok) {
-        localStorage.setItem('token', datos.access_token);
-        localStorage.setItem('nombre', datos.usuario.nombre);
-        window.location.href = '/ui/ingredients';
-    } else {
-        mostrarMsg('msg-login', datos.detail || 'Error al iniciar sesión', false);
+    function mostrarTab(tab) {
+        const esLogin = tab === 'login';
+        document.getElementById('form-login').style.display    = esLogin ? 'block' : 'none';
+        document.getElementById('form-registro').style.display = esLogin ? 'none'  : 'block';
+        document.getElementById('tab-login').classList.toggle('activa', esLogin);
+        document.getElementById('tab-reg').classList.toggle('activa', !esLogin);
     }
-}
 
-async function registrar(e) {
-    e.preventDefault();
-    const resp = await fetch('/auth/register', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            nombre:   document.getElementById('reg-nombre').value,
-            email:    document.getElementById('reg-email').value,
-            password: document.getElementById('reg-pass').value
-        })
-    });
-    const datos = await resp.json();
-    if (resp.ok) {
-        mostrarMsg('msg-registro', 'Cuenta creada. Ahora inicia sesión.', true);
-        mostrarTab('login');
-    } else {
-        const detalle = datos.detail?.[0]?.msg || datos.detail || 'Error al registrarse';
-        mostrarMsg('msg-registro', detalle, false);
+    async function login(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btn-login');
+        btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Entrando...';
+        try {
+            const resp = await fetch('/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    email: document.getElementById('login-email').value.trim(),
+                    password: document.getElementById('login-pass').value
+                })
+            });
+            const datos = await resp.json();
+            if (resp.ok) {
+                localStorage.setItem('token', datos.access_token);
+                localStorage.setItem('nombre', datos.usuario.nombre);
+                toast('¡Bienvenido, ' + datos.usuario.nombre + '!', 'ok');
+                setTimeout(() => window.location.href = '/ui/ingredients', 600);
+            } else {
+                toast(errorDetalle(datos, 'Credenciales incorrectas'), 'error');
+                btn.disabled = false; btn.textContent = 'Entrar';
+            }
+        } catch (err) {
+            toast('No se pudo conectar con el servidor', 'error');
+            btn.disabled = false; btn.textContent = 'Entrar';
+        }
     }
-}
+
+    async function registrar(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btn-reg');
+        btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Creando...';
+        const email = document.getElementById('reg-email').value.trim();
+        try {
+            const resp = await fetch('/auth/register', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    nombre:   document.getElementById('reg-nombre').value.trim(),
+                    email:    email,
+                    password: document.getElementById('reg-pass').value
+                })
+            });
+            const datos = await resp.json();
+            if (resp.ok) {
+                toast('Cuenta creada con éxito. Ya puedes iniciar sesión.', 'ok');
+                document.getElementById('form-registro').reset();
+                mostrarTab('login');
+                document.getElementById('login-email').value = email; // pre-rellena el correo
+            } else {
+                toast(errorDetalle(datos, 'No se pudo crear la cuenta'), 'error');
+            }
+        } catch (err) {
+            toast('No se pudo conectar con el servidor', 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = 'Crear cuenta';
+        }
+    }
 </script>
 {% endblock %}

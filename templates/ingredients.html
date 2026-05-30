@@ -2,20 +2,18 @@
 {% block title %}Ingredientes - Inventario Recetas IA{% endblock %}
 {% block content %}
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-    <h2 style="color:#2d6a4f;">Mi Inventario</h2>
-    <span id="bienvenida" style="color:#555; font-size:0.9rem;"></span>
+<div class="flex-between" style="margin-bottom:1.2rem;">
+    <h2 class="section-title">🥕 Mi inventario</h2>
+    <span class="muted" id="saludo"></span>
 </div>
 
-<div id="msg-global"></div>
-
-<!-- Formulario para agregar -->
+<!-- Agregar ingrediente -->
 <div class="card">
-    <h3 style="margin-bottom:1rem; font-size:1rem;">Agregar ingrediente</h3>
-    <form onsubmit="agregarIngrediente(event)" style="display:grid; grid-template-columns:2fr 1fr 1fr auto; gap:0.6rem; align-items:end;">
+    <h3 style="font-size:1rem; margin-bottom:0.9rem; color:var(--gris-700);">Agregar ingrediente</h3>
+    <form onsubmit="agregar(event)" class="form-ingrediente" style="display:grid; grid-template-columns:2fr 1fr 1.2fr auto; gap:0.7rem; align-items:end;">
         <div>
             <label>Nombre</label>
-            <input type="text" id="ing-nombre" required placeholder="Tomate, Arroz...">
+            <input type="text" id="ing-nombre" required placeholder="Tomate, arroz, pollo..." minlength="2">
         </div>
         <div>
             <label>Cantidad</label>
@@ -34,104 +32,88 @@
                 <option>pizca</option>
             </select>
         </div>
-        <button type="submit" class="btn btn-primary" style="height:36px;">+ Agregar</button>
+        <button type="submit" class="btn btn-primary" id="btn-add">+ Agregar</button>
     </form>
 </div>
 
-<!-- Lista de ingredientes -->
+<!-- Lista -->
 <div class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-        <h3 style="font-size:1rem;">Ingredientes disponibles (<span id="total">0</span>)</h3>
-        <a href="/ui/recipes" class="btn btn-primary" id="btn-generar">Generar receta con IA ✨</a>
+    <div class="flex-between" style="margin-bottom:0.8rem;">
+        <h3 style="font-size:1rem; color:var(--gris-700);">
+            Disponibles <span class="badge badge-count" id="total">0</span>
+        </h3>
+        <a href="/ui/recipes" class="btn btn-primary btn-sm">Generar receta con IA ✨</a>
     </div>
-    <div id="lista-ingredientes">
-        <p style="color:#888; text-align:center; padding:1rem;">Cargando...</p>
+    <div id="lista">
+        <div class="empty"><span class="spinner spinner-verde"></span></div>
     </div>
 </div>
 
-<style>
-.ing-row { display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0; border-bottom:1px solid #f0f0f0; }
-.ing-row:last-child { border-bottom:none; }
-.ing-info { font-size:0.95rem; }
-.ing-nombre { font-weight:600; }
-.ing-detalle { color:#888; font-size:0.85rem; margin-left:0.5rem; }
-</style>
-
+{% endblock %}
+{% block scripts %}
 <script>
-const TOKEN = localStorage.getItem('token');
-if (!TOKEN) window.location.href = '/ui/login';
+    if (!requiereSesion()) { } // redirige si no hay token
+    document.getElementById('saludo').textContent = NOMBRE ? ('Hola, ' + NOMBRE) : '';
 
-document.getElementById('bienvenida').textContent =
-    'Hola, ' + (localStorage.getItem('nombre') || 'usuario');
-
-async function api(url, opts = {}) {
-    opts.headers = { ...(opts.headers || {}), 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' };
-    const r = await fetch(url, opts);
-    if (r.status === 401) { localStorage.clear(); window.location.href = '/ui/login'; }
-    return r;
-}
-
-function mostrarMsg(texto, ok) {
-    const el = document.getElementById('msg-global');
-    el.className = ok ? 'msg-ok' : 'msg-error';
-    el.textContent = texto;
-    setTimeout(() => el.textContent = '', 3000);
-}
-
-async function cargarIngredientes() {
-    const r = await api('/ingredients/');
-    const lista = await r.json();
-    document.getElementById('total').textContent = lista.length;
-
-    const contenedor = document.getElementById('lista-ingredientes');
-    if (lista.length === 0) {
-        contenedor.innerHTML = '<p style="color:#888; text-align:center; padding:1rem;">No tienes ingredientes. ¡Agrega el primero!</p>';
-        return;
+    function escapar(t) {
+        return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
-    contenedor.innerHTML = lista.map(ing => `
-        <div class="ing-row" id="ing-${ing.id}">
-            <span class="ing-info">
-                <span class="ing-nombre">${ing.nombre}</span>
-                <span class="ing-detalle">${ing.cantidad} ${ing.unidad}</span>
-            </span>
-            <button class="btn btn-danger" onclick="eliminar(${ing.id}, '${ing.nombre}')"
-                style="padding:0.3rem 0.8rem; font-size:0.8rem;">Eliminar</button>
-        </div>
-    `).join('');
-}
 
-async function agregarIngrediente(e) {
-    e.preventDefault();
-    const r = await api('/ingredients/', {
-        method: 'POST',
-        body: JSON.stringify({
-            nombre:   document.getElementById('ing-nombre').value,
-            cantidad: parseFloat(document.getElementById('ing-cantidad').value),
-            unidad:   document.getElementById('ing-unidad').value,
-        })
-    });
-    const datos = await r.json();
-    if (r.ok) {
-        mostrarMsg('Ingrediente agregado correctamente', true);
-        document.getElementById('ing-nombre').value = '';
-        document.getElementById('ing-cantidad').value = '';
-        cargarIngredientes();
-    } else {
-        mostrarMsg(datos.detail || 'Error al agregar', false);
+    async function cargar() {
+        const r = await api('/ingredients/');
+        if (!r.ok) return;
+        const lista = await r.json();
+        document.getElementById('total').textContent = lista.length;
+        const cont = document.getElementById('lista');
+
+        if (lista.length === 0) {
+            cont.innerHTML = `<div class="empty"><span class="icon">🍽️</span>
+                Tu inventario está vacío.<br>Agrega tu primer ingrediente arriba.</div>`;
+            return;
+        }
+        cont.innerHTML = lista.map(ing => `
+            <div class="row-item">
+                <span>
+                    <strong>${escapar(ing.nombre)}</strong>
+                    <span class="chip">${ing.cantidad} ${escapar(ing.unidad)}</span>
+                </span>
+                <button class="btn btn-danger btn-sm" onclick="eliminar(${ing.id}, '${escapar(ing.nombre).replace(/'/g, "\\'")}')">Eliminar</button>
+            </div>
+        `).join('');
     }
-}
 
-async function eliminar(id, nombre) {
-    if (!confirm(`¿Eliminar "${nombre}" del inventario?`)) return;
-    const r = await api(`/ingredients/${id}`, { method: 'DELETE' });
-    if (r.ok) {
-        mostrarMsg(`"${nombre}" eliminado`, true);
-        cargarIngredientes();
-    } else {
-        mostrarMsg('Error al eliminar', false);
+    async function agregar(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btn-add');
+        btn.disabled = true;
+        const r = await api('/ingredients/', {
+            method: 'POST',
+            body: JSON.stringify({
+                nombre:   document.getElementById('ing-nombre').value.trim(),
+                cantidad: parseFloat(document.getElementById('ing-cantidad').value),
+                unidad:   document.getElementById('ing-unidad').value
+            })
+        });
+        const datos = await r.json();
+        btn.disabled = false;
+        if (r.ok) {
+            toast('Ingrediente agregado', 'ok');
+            document.getElementById('ing-nombre').value = '';
+            document.getElementById('ing-cantidad').value = '';
+            document.getElementById('ing-nombre').focus();
+            cargar();
+        } else {
+            toast(errorDetalle(datos, 'No se pudo agregar'), 'error');
+        }
     }
-}
 
-cargarIngredientes();
+    async function eliminar(id, nombre) {
+        if (!confirm(`¿Eliminar "${nombre}" del inventario?`)) return;
+        const r = await api('/ingredients/' + id, { method: 'DELETE' });
+        if (r.ok) { toast('Ingrediente eliminado', 'info'); cargar(); }
+        else toast('No se pudo eliminar', 'error');
+    }
+
+    cargar();
 </script>
 {% endblock %}

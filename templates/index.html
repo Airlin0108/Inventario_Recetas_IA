@@ -1,40 +1,43 @@
 {% extends "base.html" %}
 {% block title %}Inicio - Inventario Recetas IA{% endblock %}
 {% block content %}
-<div class="card" style="text-align:center; padding: 2.5rem;">
-    <h2 style="font-size:1.8rem; color:#2d6a4f; margin-bottom:0.5rem;">Genera recetas con tus ingredientes</h2>
-    <p style="color:#666; margin-bottom:1.5rem;">Registra lo que tienes en casa y nuestra IA crea recetas personalizadas para ti.</p>
+
+<div class="card hero">
+    <h2>Cocina con lo que tienes en casa</h2>
+    <p>Registra tus ingredientes y deja que la inteligencia artificial te proponga recetas completas, paso a paso.</p>
     <div id="cta-guest">
-        <a href="/ui/login" class="btn btn-primary" style="font-size:1rem; padding:0.7rem 2rem;">Comenzar ahora</a>
+        <a href="/ui/login" class="btn btn-primary btn-lg">Comenzar ahora →</a>
     </div>
     <div id="cta-auth" style="display:none;">
-        <a href="/ui/ingredients" class="btn btn-primary" style="margin-right:0.5rem;">Gestionar Ingredientes</a>
-        <a href="/ui/recipes" class="btn btn-primary">Ver mis Recetas</a>
+        <a href="/ui/ingredients" class="btn btn-primary btn-lg" style="margin-right:0.5rem;">🥕 Mis ingredientes</a>
+        <a href="/ui/recipes" class="btn btn-ghost btn-lg">📖 Mis recetas</a>
     </div>
 </div>
 
-<div style="display:grid; grid-template-columns: repeat(3,1fr); gap:1rem; margin-top:1rem;">
+<div class="grid-3">
     <div class="card" style="text-align:center;">
-        <div style="font-size:2rem;">🥕</div>
-        <h3 style="margin:0.5rem 0; color:#2d6a4f;">1. Agrega ingredientes</h3>
-        <p style="font-size:0.9rem; color:#666;">Registra los ingredientes que tienes disponibles en tu cocina.</p>
+        <div style="font-size:2.4rem;">🥕</div>
+        <h3 style="margin:0.6rem 0; color:var(--verde-700);">1. Agrega ingredientes</h3>
+        <p class="muted">Registra lo que tienes disponible en tu cocina, con cantidades y unidades.</p>
     </div>
     <div class="card" style="text-align:center;">
-        <div style="font-size:2rem;">🤖</div>
-        <h3 style="margin:0.5rem 0; color:#2d6a4f;">2. La IA genera la receta</h3>
-        <p style="font-size:0.9rem; color:#666;">Un modelo de lenguaje crea una receta estructurada con tus ingredientes.</p>
+        <div style="font-size:2.4rem;">🤖</div>
+        <h3 style="margin:0.6rem 0; color:var(--verde-700);">2. La IA cocina por ti</h3>
+        <p class="muted">Un modelo de lenguaje crea una receta estructurada usando tu inventario.</p>
     </div>
     <div class="card" style="text-align:center;">
-        <div style="font-size:2rem;">⭐</div>
-        <h3 style="margin:0.5rem 0; color:#2d6a4f;">3. Guarda y califica</h3>
-        <p style="font-size:0.9rem; color:#666;">Conserva las recetas que te gusten y califícalas del 1 al 5.</p>
+        <div style="font-size:2.4rem;">⭐</div>
+        <h3 style="margin:0.6rem 0; color:var(--verde-700);">3. Guarda y califica</h3>
+        <p class="muted">Conserva tus recetas favoritas y califícalas del 1 al 5 estrellas.</p>
     </div>
 </div>
 
+{% endblock %}
+{% block scripts %}
 <script>
-if (localStorage.getItem('token')) {
-    document.getElementById('cta-guest').style.display = 'none';
-    document.getElementById('cta-auth').style.display = 'block';
-}
+    if (localStorage.getItem('token')) {
+        document.getElementById('cta-guest').style.display = 'none';
+        document.getElementById('cta-auth').style.display = 'block';
+    }
 </script>
 {% endblock %}
