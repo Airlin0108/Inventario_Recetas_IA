@@ -1,4 +1,4 @@
-# Inventario_Recetas_IA
+# Inventario Recetas IA
 
 Aplicación web que permite a los usuarios registrar ingredientes disponibles en casa y obtener recetas generadas por inteligencia artificial a partir de ese inventario.
 
@@ -9,35 +9,57 @@ El sistema integra un modelo de lenguaje (LLM) a través de OpenRouter para gene
 ## Tecnologías utilizadas
 
 - **Backend**: Python 3.11 + FastAPI
-- **Base de datos**: PostgreSQL con SQLAlchemy ORM
-- **Autenticación**: JWT (JSON Web Tokens)
+- **Base de datos**: PostgreSQL con SQLAlchemy ORM + Alembic (migraciones)
+- **Autenticación**: JWT (JSON Web Tokens) con bcrypt
 - **LLM**: OpenRouter API (modelos como Mistral, LLaMA, etc.)
 - **Contenedores**: Docker + Docker Compose
-- **Pruebas**: Pytest
+- **Frontend**: HTML + Jinja2
+- **Pruebas**: Pytest + pytest-asyncio
 
 ## Estructura del proyecto
 
 ```
-proyecto-recetas/
+Inventario_Recetas_IA/
 ├── app/
 │   ├── main.py              # Punto de entrada de la aplicación
 │   ├── database.py          # Configuración de la conexión a PostgreSQL
+│   ├── auth/
+│   │   └── auth.py          # JWT, bcrypt, dependencia get_current_user
 │   ├── models/
-│   │   └── models.py        # Modelos ORM de las tablas
+│   │   └── models.py        # Modelos ORM de las cuatro tablas
 │   ├── routers/
 │   │   ├── users.py         # Endpoints de autenticación
-│   │   ├── ingredients.py   # Endpoints de gestión de ingredientes
-│   │   └── recipes.py       # Endpoints de generación de recetas
+│   │   ├── ingredients.py   # CRUD de ingredientes
+│   │   ├── recipes.py       # Generación y gestión de recetas
+│   │   ├── ratings.py       # Calificación de recetas
+│   │   └── frontend.py      # Vistas HTML
 │   ├── services/
-│   │   └── llm_service.py   # Servicio de integración con LLM
+│   │   └── llm_service.py   # Integración con OpenRouter
 │   └── schemas/
 │       └── schemas.py       # Esquemas Pydantic de validación
 ├── tests/
-│   └── test_*.py            # Pruebas unitarias
+│   ├── conftest.py               # Fixtures: BD de prueba, cliente, usuario
+│   ├── test_auth.py              # Pruebas de hashing y JWT
+│   ├── test_schemas.py           # Pruebas de validación Pydantic
+│   ├── test_llm_service.py       # Pruebas de prompt y parseo LLM
+│   ├── test_ingredients_api.py   # Pruebas de endpoints de ingredientes
+│   └── test_recipes_api.py       # Pruebas de recetas y calificaciones
+├── templates/
+│   ├── base.html            # Plantilla base con navegación
+│   └── index.html           # Página de inicio
+├── alembic/
+│   ├── env.py               # Configuración de migraciones
+│   └── versions/
+│       └── 0001_crear_tablas_iniciales.py
+├── deploy/
+│   ├── nginx.conf           # Configuración Nginx con SSL
+│   └── setup_vps.sh         # Script de instalación en VPS
 ├── static/
 │   └── favicon.ico
 ├── docker-compose.yml
 ├── Dockerfile
+├── alembic.ini
+├── pytest.ini
 ├── .env.example
 ├── requirements.txt
 └── README.md
@@ -61,64 +83,88 @@ cd Inventario_Recetas_IA
 2. Copiar el archivo de variables de entorno y configurarlo:
 ```bash
 cp .env.example .env
-# Editar .env con tus credenciales
+# Editar .env con tus credenciales reales
 ```
 
 3. Levantar los servicios:
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
-4. Acceder a la aplicación en `http://localhost:8000`
-
-5. Documentación automática de la API: `http://localhost:8000/docs`
+4. Acceder a la aplicación:
+   - Interfaz web: `http://localhost:8000`
+   - Documentación API (Swagger): `http://localhost:8000/docs`
 
 ### Ejecución local (sin Docker)
 
-1. Instalar dependencias:
 ```bash
 pip install -r requirements.txt
+cp .env.example .env   # Editar con tu PostgreSQL local
+uvicorn app.main:app --reload
 ```
 
-2. Configurar variables de entorno en archivo `.env`
+## Endpoints de la API
 
-3. Ejecutar la aplicación:
+| Método | Ruta | Descripción | Auth |
+|--------|------|-------------|------|
+| POST | `/auth/register` | Registro de nuevo usuario | No |
+| POST | `/auth/login` | Inicio de sesión → token JWT | No |
+| GET | `/auth/me` | Perfil del usuario autenticado | Si |
+| GET | `/ingredients/` | Listar ingredientes del inventario | Si |
+| POST | `/ingredients/` | Agregar ingrediente | Si |
+| PUT | `/ingredients/{id}` | Actualizar cantidad/unidad | Si |
+| DELETE | `/ingredients/{id}` | Eliminar ingrediente | Si |
+| POST | `/recipes/generate` | Generar receta con IA | Si |
+| GET | `/recipes/` | Listar recetas guardadas | Si |
+| GET | `/recipes/{id}` | Detalle de una receta | Si |
+| DELETE | `/recipes/{id}` | Eliminar receta | Si |
+| POST | `/recipes/{id}/rate` | Calificar receta (1-5) | Si |
+| GET | `/recipes/{id}/ratings` | Listar calificaciones | Si |
+| DELETE | `/recipes/{id}/rate` | Eliminar calificacion propia | Si |
+
+## Pruebas unitarias
+
+El proyecto incluye más de 40 pruebas organizadas en 5 archivos:
+
 ```bash
-uvicorn app.main:app --reload
+pytest tests/ -v
+```
+
+Cobertura de pruebas:
+- **test_auth.py** — hashing bcrypt, creación/decodificación de tokens JWT
+- **test_schemas.py** — validación de ingredientes, usuarios y calificaciones
+- **test_llm_service.py** — construcción del prompt, parseo de JSON del LLM
+- **test_ingredients_api.py** — registro, login y CRUD completo de ingredientes
+- **test_recipes_api.py** — generación de recetas (LLM simulado), calificaciones
+
+## Migraciones de base de datos
+
+```bash
+# Aplicar migraciones
+alembic upgrade head
+
+# Crear nueva migración
+alembic revision --autogenerate -m "descripcion del cambio"
+```
+
+## Despliegue en VPS
+
+Ver `deploy/nginx.conf` para la configuración de Nginx con SSL y `deploy/setup_vps.sh` para el script de instalación automática en Ubuntu 22.04.
+
+```bash
+# En el VPS, levantar con Docker Compose
+docker compose up -d --build
 ```
 
 ## Variables de entorno
 
 Consultar `.env.example` para ver todas las variables necesarias con sus descripciones.
 
-## Endpoints principales
-
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| POST | `/auth/register` | Registro de nuevo usuario |
-| POST | `/auth/login` | Inicio de sesión y obtención de token JWT |
-| GET | `/ingredients/` | Listar ingredientes del usuario |
-| POST | `/ingredients/` | Agregar ingrediente al inventario |
-| DELETE | `/ingredients/{id}` | Eliminar ingrediente del inventario |
-| POST | `/recipes/generate` | Generar receta basada en inventario actual |
-| GET | `/recipes/` | Listar recetas guardadas del usuario |
-| POST | `/recipes/{id}/rate` | Calificar una receta |
-| DELETE | `/recipes/{id}` | Eliminar una receta guardada |
-
-## Pruebas
-
-```bash
-pytest tests/ -v
-```
-
-## Despliegue
-
-La aplicación está diseñada para desplegarse en un VPS con dominio propio y certificado SSL. Ver la sección de Docker para instrucciones de despliegue en producción.
-
 ## Equipo de desarrollo
 
-- Airlin silvera
-- Iver Masco
+- **Airlin Silvera** — Fase 1: estructura base, modelos, autenticación, ingredientes
+- **Diego Martinez** — Fase 2: servicio LLM, recetas, calificaciones, Docker, frontend
+- **Samuel Ortega** — Fase 3: pruebas unitarias, Alembic, despliegue, documentación
 
 ## Licencia
 
