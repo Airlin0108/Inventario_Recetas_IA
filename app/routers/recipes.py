@@ -75,3 +75,53 @@ async def generar_receta_endpoint(
     db.commit()
     db.refresh(nueva_receta)
     return _receta_a_detalle(nueva_receta)
+
+
+@router.get("/", response_model=List[RecetaDetalleResponse])
+def listar_recetas(
+    db: Session = Depends(get_db),
+    usuario_actual: Usuario = Depends(get_current_user),
+):
+    """Devuelve todas las recetas guardadas del usuario autenticado con su calificacion promedio."""
+    recetas = (
+        db.query(Receta)
+        .filter(Receta.usuario_id == usuario_actual.id, Receta.guardada == True)
+        .order_by(Receta.fecha_generacion.desc())
+        .all()
+    )
+    return [_receta_a_detalle(r) for r in recetas]
+
+
+@router.get("/{receta_id}", response_model=RecetaDetalleResponse)
+def obtener_receta(
+    receta_id: int,
+    db: Session = Depends(get_db),
+    usuario_actual: Usuario = Depends(get_current_user),
+):
+    """Devuelve el detalle completo de una receta especifica del usuario."""
+    receta = (
+        db.query(Receta)
+        .filter(Receta.id == receta_id, Receta.usuario_id == usuario_actual.id)
+        .first()
+    )
+    if not receta:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receta no encontrada")
+    return _receta_a_detalle(receta)
+
+
+@router.delete("/{receta_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_receta(
+    receta_id: int,
+    db: Session = Depends(get_db),
+    usuario_actual: Usuario = Depends(get_current_user),
+):
+    """Elimina permanentemente una receta guardada del usuario."""
+    receta = (
+        db.query(Receta)
+        .filter(Receta.id == receta_id, Receta.usuario_id == usuario_actual.id)
+        .first()
+    )
+    if not receta:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receta no encontrada")
+    db.delete(receta)
+    db.commit()
