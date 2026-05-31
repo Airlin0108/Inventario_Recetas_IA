@@ -9,7 +9,7 @@ load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-LLM_MODEL = os.getenv("LLM_MODEL", "mistralai/mistral-7b-instruct")
+LLM_MODEL = os.getenv("LLM_MODEL", "deepseek/deepseek-chat")
 
 
 def _construir_prompt(ingredientes: List[dict]) -> str:
