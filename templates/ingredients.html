@@ -13,14 +13,29 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-stack-lg">
 
-    <!-- Formulario -->
+    <!-- ===== Formulario (agregar / editar) ===== -->
     <section class="lg:col-span-5">
-        <div class="bg-white p-8 rounded-xl card-shadow sticky top-28">
-            <div class="flex items-center gap-base mb-stack-md">
-                <span class="material-symbols-outlined text-primary text-[32px]">kitchen</span>
-                <h2 class="font-headline-md text-headline-md text-on-surface">Agregar ingrediente</h2>
+        <div id="form-card" class="bg-white p-8 rounded-xl card-shadow sticky top-28 transition-all">
+
+            <!-- Cabecera — cambia según el modo -->
+            <div class="flex items-center justify-between mb-stack-md">
+                <div class="flex items-center gap-base">
+                    <span id="form-icon" class="material-symbols-outlined text-primary text-[32px]">kitchen</span>
+                    <h2 id="form-titulo" class="font-headline-md text-headline-md text-on-surface">Agregar ingrediente</h2>
+                </div>
+                <!-- Botón cancelar edición (oculto en modo agregar) -->
+                <button id="btn-cancelar" onclick="cancelarEdicion()" class="hidden text-on-surface-variant hover:text-error transition-colors flex items-center gap-1 font-label-bold text-label-bold text-sm">
+                    <span class="material-symbols-outlined text-[18px]">close</span> Cancelar
+                </button>
             </div>
-            <form onsubmit="agregar(event)" class="space-y-stack-md">
+
+            <!-- Aviso de modo edición -->
+            <div id="aviso-edicion" class="hidden mb-4 px-4 py-3 rounded-lg bg-surface-container border border-outline-variant/60 text-sm text-on-surface-variant flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[18px]">info</span>
+                <span>Editando: <strong id="aviso-nombre" class="text-on-surface"></strong></span>
+            </div>
+
+            <form id="form-ingrediente" onsubmit="enviarFormulario(event)" class="space-y-stack-md">
                 <div class="space-y-2">
                     <label class="font-label-bold text-label-bold text-on-surface-variant block">Nombre del ingrediente</label>
                     <input id="ing-nombre" type="text" required minlength="2" placeholder="Ej: Tomates cherry"
@@ -41,26 +56,30 @@
                         </select>
                     </div>
                 </div>
-                <button id="btn-add" type="submit" class="w-full bg-primary text-on-primary py-4 rounded-lg font-label-bold text-label-bold shadow-md hover:bg-primary-container transition-all active:scale-95 flex justify-center items-center gap-base">
-                    <span class="material-symbols-outlined">add</span> Añadir al inventario
+
+                <!-- Botón principal: texto e icono cambian según el modo -->
+                <button id="btn-submit" type="submit"
+                    class="w-full bg-primary text-on-primary py-4 rounded-lg font-label-bold text-label-bold shadow-md hover:bg-primary-container transition-all active:scale-95 flex justify-center items-center gap-base">
+                    <span class="material-symbols-outlined" id="btn-submit-icon">add</span>
+                    <span id="btn-submit-texto">Añadir al inventario</span>
                 </button>
-                <a href="/ui/recipes" class="w-full bg-secondary-container text-on-secondary-container py-4 rounded-lg font-label-bold text-label-bold shadow-md hover:brightness-105 transition-all active:scale-95 flex justify-center items-center gap-base">
+
+                <a href="/ui/recipes"
+                    class="w-full bg-secondary-container text-on-secondary-container py-4 rounded-lg font-label-bold text-label-bold shadow-md hover:brightness-105 transition-all active:scale-95 flex justify-center items-center gap-base">
                     <span class="material-symbols-outlined icon-fill">auto_awesome</span> Generar receta con IA
                 </a>
             </form>
         </div>
     </section>
 
-    <!-- Inventario -->
+    <!-- ===== Lista de ingredientes ===== -->
     <section class="lg:col-span-7">
         <div class="bg-white rounded-xl card-shadow p-stack-md border border-outline-variant/30">
-            <div class="flex justify-between items-end mb-stack-md">
-                <div>
-                    <h2 class="font-headline-md text-headline-md text-on-surface">Inventario actual</h2>
-                    <p class="font-body-md text-on-surface-variant" id="contador">Cargando...</p>
-                </div>
+            <div class="mb-stack-md">
+                <h2 class="font-headline-md text-headline-md text-on-surface">Inventario actual</h2>
+                <p class="font-body-md text-on-surface-variant" id="contador">Cargando...</p>
             </div>
-            <div id="lista" class="space-y-stack-sm">
+            <div id="lista" class="space-y-1">
                 <div class="text-center py-10"><span class="spinner spinner-verde"></span></div>
             </div>
         </div>
@@ -72,60 +91,146 @@
 {% block scripts %}
 <script>
     requiereSesion();
-    if (NOMBRE) document.getElementById('saludo').textContent = 'Hola, ' + NOMBRE + '. Gestiona tus ingredientes y genera recetas con IA.';
+    if (NOMBRE) document.getElementById('saludo').textContent =
+        'Hola, ' + NOMBRE + '. Gestiona tus ingredientes y genera recetas con IA.';
 
-    // Icono según el tipo de ingrediente (heurística simple por nombre)
+    // ── Estado del formulario ──────────────────────────────────────────────
+    let modoEdicion = false;   // false = agregar, true = editar
+    let editandoId  = null;    // ID del ingrediente que se está editando
+
+    // ── Icono por tipo de alimento ─────────────────────────────────────────
     function iconoPara(nombre) {
         const n = nombre.toLowerCase();
-        if (/(huevo|egg)/.test(n)) return 'egg';
-        if (/(leche|crema|yogur|queso|mantequilla)/.test(n)) return 'water_drop';
+        if (/(huevo|egg)/.test(n))                             return 'egg';
+        if (/(leche|crema|yogur|queso|mantequilla)/.test(n))  return 'water_drop';
         if (/(pollo|carne|res|cerdo|pescado|salmon|atun)/.test(n)) return 'kebab_dining';
-        if (/(arroz|pasta|harina|pan|avena|trigo|grano)/.test(n)) return 'grain';
-        if (/(espinaca|lechuga|brocoli|acelga|cilantro|albahaca|hierba)/.test(n)) return 'spa';
-        if (/(tomate|manzana|fresa|pimiento|zanahoria|naranja|limon|fruta|verdura)/.test(n)) return 'nutrition';
-        if (/(aceite|vinagre)/.test(n)) return 'oil_barrel';
+        if (/(arroz|pasta|harina|pan|avena|trigo|grano)/.test(n))  return 'grain';
+        if (/(espinaca|lechuga|brocoli|acelga|cilantro|albahaca)/.test(n)) return 'spa';
+        if (/(tomate|manzana|fresa|pimiento|zanahoria|naranja|limon)/.test(n)) return 'nutrition';
+        if (/(aceite|vinagre)/.test(n))                        return 'oil_barrel';
         return 'grocery';
     }
 
+    // ── Renderiza la lista ─────────────────────────────────────────────────
     async function cargar() {
         const r = await api('/ingredients/');
         if (!r.ok) return;
         const lista = await r.json();
+        const n = lista.length;
         document.getElementById('contador').textContent =
-            lista.length === 1 ? 'Tienes 1 ingrediente disponible' : `Tienes ${lista.length} ingredientes disponibles`;
+            n === 0 ? 'Sin ingredientes' :
+            n === 1 ? 'Tienes 1 ingrediente disponible' :
+                      `Tienes ${n} ingredientes disponibles`;
         const cont = document.getElementById('lista');
 
-        if (lista.length === 0) {
+        if (n === 0) {
             cont.innerHTML = `<div class="text-center py-12 text-on-surface-variant">
                 <span class="material-symbols-outlined text-[48px] text-outline-variant">restaurant</span>
                 <p class="mt-2 font-label-bold">Tu inventario está vacío.</p>
                 <p class="text-body-md">Agrega tu primer ingrediente con el formulario.</p></div>`;
             return;
         }
-        cont.innerHTML = lista.map(ing => {
-            const nombre = escapar(ing.nombre);
-            return `
-            <div class="fade-in flex items-center justify-between p-4 rounded-lg hover:bg-surface-bright transition-colors border border-transparent hover:border-outline-variant/40 group">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
-                        <span class="material-symbols-outlined text-[26px]">${iconoPara(ing.nombre)}</span>
-                    </div>
-                    <p class="font-label-bold text-label-bold text-on-surface">${nombre}</p>
-                </div>
-                <div class="flex items-center gap-stack-md">
-                    <span class="px-3 py-1 bg-primary-fixed text-on-primary-fixed rounded-full text-xs font-bold whitespace-nowrap">${ing.cantidad} ${escapar(ing.unidad)}</span>
-                    <button onclick="eliminar(${ing.id}, '${nombre.replace(/'/g, "\\'")}')" title="Eliminar"
-                        class="opacity-0 group-hover:opacity-100 transition-opacity text-on-surface-variant hover:text-error">
-                        <span class="material-symbols-outlined">delete</span>
-                    </button>
-                </div>
-            </div>`;
-        }).join('');
+        cont.innerHTML = lista.map(filaHTML).join('');
     }
 
-    async function agregar(e) {
+    function filaHTML(ing) {
+        const nombre = escapar(ing.nombre);
+        const activo = (modoEdicion && editandoId === ing.id);
+        return `
+        <div id="row-${ing.id}"
+            class="fade-in flex items-center justify-between p-4 rounded-lg border transition-colors group
+                   ${activo
+                     ? 'border-primary/50 bg-surface-container-low'
+                     : 'border-transparent hover:border-outline-variant/40 hover:bg-surface-bright'}">
+            <div class="flex items-center gap-4 min-w-0">
+                <div class="w-12 h-12 rounded-lg ${activo ? 'bg-primary-container' : 'bg-surface-container-high'} flex items-center justify-center ${activo ? 'text-on-primary-container' : 'text-primary'} flex-shrink-0">
+                    <span class="material-symbols-outlined text-[26px]">${activo ? 'edit' : iconoPara(ing.nombre)}</span>
+                </div>
+                <div class="min-w-0">
+                    <p class="font-label-bold text-label-bold text-on-surface truncate">${nombre}</p>
+                    ${activo ? '<p class="text-xs text-primary font-semibold">Editando en el formulario →</p>' : ''}
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="px-3 py-1 ${activo ? 'bg-primary text-on-primary' : 'bg-primary-fixed text-on-primary-fixed'} rounded-full text-xs font-bold whitespace-nowrap">
+                    ${ing.cantidad} ${escapar(ing.unidad)}
+                </span>
+                <button onclick="activarEdicion(${ing.id}, '${nombre.replace(/'/g,"\\'")}', ${ing.cantidad}, '${escapar(ing.unidad)}')"
+                    title="Editar"
+                    class="${activo ? 'opacity-100 text-primary' : 'opacity-0 group-hover:opacity-100 text-on-surface-variant hover:text-primary'} transition-all">
+                    <span class="material-symbols-outlined">${activo ? 'edit_note' : 'edit'}</span>
+                </button>
+                <button onclick="eliminar(${ing.id}, '${nombre.replace(/'/g,"\\'")}')"
+                    title="Eliminar"
+                    class="${activo ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-all text-on-surface-variant hover:text-error">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            </div>
+        </div>`;
+    }
+
+    // ── Activa el modo edición en el formulario ────────────────────────────
+    function activarEdicion(id, nombre, cantidad, unidad) {
+        modoEdicion = true;
+        editandoId  = id;
+
+        // Rellena los campos
+        document.getElementById('ing-nombre').value  = nombre;
+        document.getElementById('ing-cantidad').value = cantidad;
+        const sel = document.getElementById('ing-unidad');
+        for (const opt of sel.options) opt.selected = (opt.value === unidad || opt.text === unidad);
+
+        // Cambia la apariencia del formulario
+        document.getElementById('form-icon').textContent      = 'edit';
+        document.getElementById('form-titulo').textContent    = 'Editar ingrediente';
+        document.getElementById('btn-submit-icon').textContent = 'check';
+        document.getElementById('btn-submit-texto').textContent = 'Guardar cambios';
+        document.getElementById('btn-cancelar').classList.remove('hidden');
+        document.getElementById('aviso-edicion').classList.remove('hidden');
+        document.getElementById('aviso-nombre').textContent   = nombre;
+        document.getElementById('form-card').classList.add('ring-2', 'ring-primary/30');
+
+        // Resalta la fila en la lista
+        cargar().then(() => {
+            document.getElementById('ing-nombre').focus();
+            document.getElementById('ing-nombre').select();
+        });
+
+        // Hace scroll al formulario en móvil
+        document.getElementById('form-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // ── Cancela la edición y vuelve al modo agregar ────────────────────────
+    function cancelarEdicion() {
+        modoEdicion = false;
+        editandoId  = null;
+        resetearFormulario();
+        cargar();
+    }
+
+    function resetearFormulario() {
+        document.getElementById('form-ingrediente').reset();
+        document.getElementById('form-icon').textContent       = 'kitchen';
+        document.getElementById('form-titulo').textContent     = 'Agregar ingrediente';
+        document.getElementById('btn-submit-icon').textContent  = 'add';
+        document.getElementById('btn-submit-texto').textContent = 'Añadir al inventario';
+        document.getElementById('btn-cancelar').classList.add('hidden');
+        document.getElementById('aviso-edicion').classList.add('hidden');
+        document.getElementById('form-card').classList.remove('ring-2', 'ring-primary/30');
+    }
+
+    // ── Envío del formulario: POST o PUT según el modo ─────────────────────
+    async function enviarFormulario(e) {
         e.preventDefault();
-        const btn = document.getElementById('btn-add');
+        if (modoEdicion) {
+            await guardar();
+        } else {
+            await agregar();
+        }
+    }
+
+    async function agregar() {
+        const btn = document.getElementById('btn-submit');
         btn.disabled = true;
         const r = await api('/ingredients/', {
             method: 'POST',
@@ -139,8 +244,7 @@
         btn.disabled = false;
         if (r.ok) {
             toast('Ingrediente agregado', 'ok');
-            document.getElementById('ing-nombre').value = '';
-            document.getElementById('ing-cantidad').value = '';
+            resetearFormulario();
             document.getElementById('ing-nombre').focus();
             cargar();
         } else {
@@ -148,8 +252,33 @@
         }
     }
 
+    async function guardar() {
+        const btn = document.getElementById('btn-submit');
+        btn.disabled = true;
+        const r = await api('/ingredients/' + editandoId, {
+            method: 'PUT',
+            body: JSON.stringify({
+                nombre:   document.getElementById('ing-nombre').value.trim(),
+                cantidad: parseFloat(document.getElementById('ing-cantidad').value),
+                unidad:   document.getElementById('ing-unidad').value
+            })
+        });
+        const datos = await r.json();
+        btn.disabled = false;
+        if (r.ok) {
+            toast('Ingrediente actualizado', 'ok');
+            modoEdicion = false;
+            editandoId  = null;
+            resetearFormulario();
+            cargar();
+        } else {
+            toast(errorDetalle(datos, 'No se pudo actualizar'), 'error');
+        }
+    }
+
     async function eliminar(id, nombre) {
         if (!confirm(`¿Eliminar "${nombre}" del inventario?`)) return;
+        if (modoEdicion && editandoId === id) cancelarEdicion();
         const r = await api('/ingredients/' + id, { method: 'DELETE' });
         if (r.ok) { toast('Ingrediente eliminado', 'info'); cargar(); }
         else toast('No se pudo eliminar', 'error');
