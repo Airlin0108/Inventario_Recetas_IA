@@ -2,33 +2,52 @@
 {% block title %}Inicio - Inventario Recetas IA{% endblock %}
 {% block content %}
 
-<div class="card hero">
-    <h2>Cocina con lo que tienes en casa</h2>
-    <p>Registra tus ingredientes y deja que la inteligencia artificial te proponga recetas completas, paso a paso.</p>
-    <div id="cta-guest">
-        <a href="/ui/login" class="btn btn-primary btn-lg">Comenzar ahora →</a>
+<!-- Hero -->
+<section class="relative rounded-2xl overflow-hidden bg-primary text-on-primary p-8 md:p-14 mb-stack-lg">
+    <div class="absolute top-0 right-0 w-72 h-72 bg-primary-container/30 rounded-full -mr-24 -mt-24 blur-3xl"></div>
+    <div class="absolute bottom-0 left-0 w-56 h-56 bg-secondary-container/20 rounded-full -ml-12 -mb-12 blur-2xl"></div>
+    <div class="relative z-10 max-w-2xl">
+        <span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider inline-block mb-4">Tu sous-chef digital</span>
+        <h1 class="font-headline-xl text-headline-xl mb-4">Cocina con lo que tienes en casa</h1>
+        <p class="font-body-lg text-body-lg opacity-90 mb-stack-md">Registra tus ingredientes y deja que la inteligencia artificial te proponga recetas completas, paso a paso.</p>
+        <div id="cta-guest" class="flex flex-wrap gap-base">
+            <a href="/ui/login" class="bg-on-primary text-primary font-label-bold text-label-bold px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-surface-container-low transition-all active:scale-95">
+                Comenzar ahora <span class="material-symbols-outlined">arrow_forward</span>
+            </a>
+        </div>
+        <div id="cta-auth" class="hidden flex-wrap gap-base">
+            <a href="/ui/ingredients" class="bg-on-primary text-primary font-label-bold text-label-bold px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-surface-container-low transition-all active:scale-95">
+                <span class="material-symbols-outlined">kitchen</span> Mis ingredientes
+            </a>
+            <a href="/ui/recipes" class="border border-on-primary/40 text-on-primary font-label-bold text-label-bold px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-on-primary/10 transition-all">
+                <span class="material-symbols-outlined">menu_book</span> Mis recetas
+            </a>
+        </div>
     </div>
-    <div id="cta-auth" style="display:none;">
-        <a href="/ui/ingredients" class="btn btn-primary btn-lg" style="margin-right:0.5rem;">🥕 Mis ingredientes</a>
-        <a href="/ui/recipes" class="btn btn-ghost btn-lg">📖 Mis recetas</a>
-    </div>
-</div>
+</section>
 
-<div class="grid-3">
-    <div class="card" style="text-align:center;">
-        <div style="font-size:2.4rem;">🥕</div>
-        <h3 style="margin:0.6rem 0; color:var(--verde-700);">1. Agrega ingredientes</h3>
-        <p class="muted">Registra lo que tienes disponible en tu cocina, con cantidades y unidades.</p>
+<!-- Pasos -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-stack-md">
+    <div class="bg-white p-8 rounded-xl card-shadow card-shadow-hover transition-all text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-primary-container rounded-full mb-4">
+            <span class="material-symbols-outlined icon-fill text-on-primary-container text-[32px]">kitchen</span>
+        </div>
+        <h3 class="font-headline-md text-[20px] text-on-surface mb-2">1. Agrega ingredientes</h3>
+        <p class="font-body-md text-on-surface-variant">Registra lo que tienes disponible en tu cocina, con cantidades y unidades.</p>
     </div>
-    <div class="card" style="text-align:center;">
-        <div style="font-size:2.4rem;">🤖</div>
-        <h3 style="margin:0.6rem 0; color:var(--verde-700);">2. La IA cocina por ti</h3>
-        <p class="muted">Un modelo de lenguaje crea una receta estructurada usando tu inventario.</p>
+    <div class="bg-white p-8 rounded-xl card-shadow card-shadow-hover transition-all text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-secondary-container rounded-full mb-4">
+            <span class="material-symbols-outlined icon-fill text-on-secondary-container text-[32px]">auto_awesome</span>
+        </div>
+        <h3 class="font-headline-md text-[20px] text-on-surface mb-2">2. La IA cocina por ti</h3>
+        <p class="font-body-md text-on-surface-variant">Un modelo de lenguaje crea una receta estructurada usando tu inventario.</p>
     </div>
-    <div class="card" style="text-align:center;">
-        <div style="font-size:2.4rem;">⭐</div>
-        <h3 style="margin:0.6rem 0; color:var(--verde-700);">3. Guarda y califica</h3>
-        <p class="muted">Conserva tus recetas favoritas y califícalas del 1 al 5 estrellas.</p>
+    <div class="bg-white p-8 rounded-xl card-shadow card-shadow-hover transition-all text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-tertiary-container rounded-full mb-4">
+            <span class="material-symbols-outlined icon-fill text-on-tertiary-container text-[32px]">star</span>
+        </div>
+        <h3 class="font-headline-md text-[20px] text-on-surface mb-2">3. Guarda y califica</h3>
+        <p class="font-body-md text-on-surface-variant">Conserva tus recetas favoritas y califícalas del 1 al 5 estrellas.</p>
     </div>
 </div>
 
@@ -36,8 +55,9 @@
 {% block scripts %}
 <script>
     if (localStorage.getItem('token')) {
-        document.getElementById('cta-guest').style.display = 'none';
-        document.getElementById('cta-auth').style.display = 'block';
+        document.getElementById('cta-guest').classList.add('hidden');
+        document.getElementById('cta-auth').classList.remove('hidden');
+        document.getElementById('cta-auth').classList.add('flex');
     }
 </script>
 {% endblock %}

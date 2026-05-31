@@ -1,95 +1,149 @@
 <!DOCTYPE html>
-<html lang="es">
+<html class="light" lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Inventario Recetas IA{% endblock %}</title>
-    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-    <link rel="stylesheet" href="/static/styles.css">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>{% block title %}Inventario Recetas IA{% endblock %}</title>
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Inter:wght@400;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+        darkMode: "class",
+        theme: { extend: {
+            colors: {
+                "secondary": "#9d4404", "surface-bright": "#f8faf9", "error-container": "#ffdad6",
+                "on-tertiary-container": "#4f3d00", "surface-container-high": "#e6e9e8",
+                "primary-fixed-dim": "#a1d494", "surface-tint": "#3b6934", "secondary-container": "#fe8d4e",
+                "on-error-container": "#93000a", "surface-variant": "#e1e3e2", "surface-dim": "#d8dada",
+                "surface-container-lowest": "#ffffff", "outline-variant": "#c2c9bb",
+                "surface-container-low": "#f2f4f3", "surface-container": "#eceeed",
+                "on-primary-container": "#9dd090", "on-secondary": "#ffffff", "inverse-on-surface": "#eff1f0",
+                "background": "#f8faf9", "on-surface": "#191c1c", "outline": "#72796e", "on-tertiary": "#ffffff",
+                "tertiary-fixed-dim": "#ebc246", "surface": "#f8faf9", "on-surface-variant": "#42493e",
+                "inverse-surface": "#2e3131", "on-primary": "#ffffff", "secondary-fixed": "#ffdbcb",
+                "error": "#ba1a1a", "inverse-primary": "#a1d494", "secondary-fixed-dim": "#ffb691",
+                "primary": "#154212", "tertiary": "#745b00", "tertiary-fixed": "#ffe08b",
+                "surface-container-highest": "#e1e3e2", "on-error": "#ffffff", "primary-fixed": "#bcf0ae",
+                "tertiary-container": "#cda72b", "primary-container": "#2d5a27",
+                "on-secondary-container": "#6d2c00", "on-background": "#191c1c", "on-primary-fixed": "#002201"
+            },
+            borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+            spacing: { "gutter": "16px", "stack-md": "24px", "base": "8px", "container-padding": "24px", "stack-lg": "48px", "stack-sm": "12px" },
+            fontFamily: {
+                "headline-md": ["Montserrat"], "headline-lg": ["Montserrat"], "headline-xl": ["Montserrat"],
+                "headline-lg-mobile": ["Montserrat"], "body-md": ["Inter"], "body-lg": ["Inter"], "label-bold": ["Inter"]
+            },
+            fontSize: {
+                "headline-md": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                "headline-lg": ["32px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                "headline-xl": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                "label-bold": ["14px", {"lineHeight": "1.2", "fontWeight": "600"}]
+            }
+        } }
+    }
+</script>
+<link rel="stylesheet" href="/static/styles.css"/>
 </head>
-<body>
-    <header class="topbar">
-        <a href="/" class="brand"><span class="logo">🍳</span> Inventario Recetas IA</a>
-        <nav class="menu">
-            <span id="nav-auth" style="display:none;">
-                <a href="/ui/ingredients">🥕 Ingredientes</a>
-                <a href="/ui/recipes">📖 Recetas</a>
-                <a href="/docs" target="_blank">⚙ API</a>
-                <a href="#" class="salir" onclick="cerrarSesion(); return false;">Salir</a>
-            </span>
-            <span id="nav-guest">
-                <a href="/ui/login">Iniciar sesión</a>
-            </span>
-        </nav>
-    </header>
+<body class="bg-background font-body-md text-on-background min-h-screen flex flex-col">
 
-    <main>
-        {% block content %}{% endblock %}
-    </main>
+<nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-container-padding py-4 bg-primary shadow-md">
+    <a href="/" class="flex items-center gap-2 text-on-primary">
+        <span class="material-symbols-outlined icon-fill text-[26px]">restaurant</span>
+        <span class="text-headline-md font-headline-md font-bold">Inventario Recetas IA</span>
+    </a>
+    <div class="flex items-center gap-4 md:gap-6">
+        <span id="nav-auth" class="hidden md:flex items-center gap-6">
+            <a data-path="/ui/ingredients" href="/ui/ingredients" class="nav-link text-on-primary/80 hover:text-on-primary font-label-bold text-label-bold transition-colors">Ingredientes</a>
+            <a data-path="/ui/recipes" href="/ui/recipes" class="nav-link text-on-primary/80 hover:text-on-primary font-label-bold text-label-bold transition-colors">Recetas</a>
+            <a href="/docs" target="_blank" class="text-on-primary/80 hover:text-on-primary font-label-bold text-label-bold transition-colors">API</a>
+        </span>
+        <button id="btn-salir" onclick="cerrarSesion()" class="hidden bg-primary-container/20 hover:bg-primary-container/40 text-on-primary px-4 py-2 rounded-lg font-label-bold text-label-bold transition-all active:scale-95">Salir</button>
+        <a id="btn-entrar" href="/ui/login" class="bg-on-primary text-primary px-4 py-2 rounded-lg font-label-bold text-label-bold transition-all hover:bg-surface-container-low active:scale-95">Iniciar sesión</a>
+    </div>
+</nav>
 
-    <footer class="pie">Inventario Recetas IA &mdash; Proyecto Final · Generador de Recetas con IA</footer>
+<main class="mt-24 mb-12 flex-grow w-full max-w-[1280px] mx-auto px-container-padding">
+    {% block content %}{% endblock %}
+</main>
 
-    <div id="toast-zona"></div>
+<footer class="w-full py-stack-md flex flex-col items-center gap-base mt-auto bg-surface-bright border-t border-outline-variant">
+    <span class="text-label-bold font-label-bold text-primary">Inventario Recetas IA</span>
+    <p class="text-label-bold font-label-bold text-on-surface-variant/70">Proyecto Final · Generador de Recetas con IA</p>
+</footer>
 
-    <script>
-        // ---- Sesión ----
-        const TOKEN = localStorage.getItem('token');
-        const NOMBRE = localStorage.getItem('nombre');
+<div id="toast-zona"></div>
 
-        if (TOKEN) {
-            document.getElementById('nav-auth').style.display = 'inline-flex';
-            document.getElementById('nav-guest').style.display = 'none';
+<script>
+    // ---- Sesión ----
+    const TOKEN  = localStorage.getItem('token');
+    const NOMBRE = localStorage.getItem('nombre');
+
+    if (TOKEN) {
+        document.getElementById('nav-auth').classList.remove('hidden');
+        document.getElementById('nav-auth').classList.add('flex');
+        document.getElementById('btn-salir').classList.remove('hidden');
+        document.getElementById('btn-entrar').classList.add('hidden');
+    }
+
+    // Resalta el enlace de la sección actual
+    document.querySelectorAll('.nav-link').forEach(a => {
+        if (a.dataset.path === window.location.pathname) {
+            a.classList.remove('text-on-primary/80');
+            a.classList.add('text-on-primary', 'border-b-2', 'border-on-primary', 'pb-1');
         }
+    });
 
-        function cerrarSesion() {
+    function cerrarSesion() { localStorage.clear(); window.location.href = '/'; }
+
+    // ---- Toasts ----
+    function toast(texto, tipo = 'ok') {
+        const z = document.getElementById('toast-zona');
+        const t = document.createElement('div');
+        const icono = tipo === 'ok' ? 'check_circle' : tipo === 'error' ? 'error' : 'info';
+        t.className = 'toast ' + tipo;
+        t.innerHTML = `<span class="material-symbols-outlined ico icon-fill">${icono}</span><span>${texto}</span>`;
+        z.appendChild(t);
+        setTimeout(() => { t.classList.add('fade'); setTimeout(() => t.remove(), 300); }, 3200);
+    }
+
+    // ---- Cliente API autenticado ----
+    async function api(url, opts = {}) {
+        opts.headers = {
+            ...(opts.headers || {}),
+            'Authorization': 'Bearer ' + localStorage.getItem('token'),
+            'Content-Type': 'application/json'
+        };
+        const r = await fetch(url, opts);
+        if (r.status === 401) {
             localStorage.clear();
-            window.location.href = '/';
+            toast('Tu sesión expiró, vuelve a iniciar sesión', 'error');
+            setTimeout(() => window.location.href = '/ui/login', 1200);
         }
+        return r;
+    }
 
-        // ---- Toasts ----
-        function toast(texto, tipo = 'ok') {
-            const z = document.getElementById('toast-zona');
-            const t = document.createElement('div');
-            const icono = tipo === 'ok' ? '✓' : tipo === 'error' ? '✕' : 'ℹ';
-            t.className = 'toast ' + tipo;
-            t.innerHTML = `<span style="font-weight:700;">${icono}</span><span>${texto}</span>`;
-            z.appendChild(t);
-            setTimeout(() => { t.classList.add('fade'); setTimeout(() => t.remove(), 300); }, 3200);
-        }
+    // ---- Mensaje de error legible desde una respuesta FastAPI ----
+    function errorDetalle(datos, fallback) {
+        if (!datos) return fallback;
+        if (typeof datos.detail === 'string') return datos.detail;
+        if (Array.isArray(datos.detail) && datos.detail[0]) return datos.detail[0].msg;
+        return fallback;
+    }
 
-        // ---- Cliente API autenticado ----
-        async function api(url, opts = {}) {
-            opts.headers = {
-                ...(opts.headers || {}),
-                'Authorization': 'Bearer ' + localStorage.getItem('token'),
-                'Content-Type': 'application/json'
-            };
-            const r = await fetch(url, opts);
-            if (r.status === 401) {
-                localStorage.clear();
-                toast('Tu sesión expiró, vuelve a iniciar sesión', 'error');
-                setTimeout(() => window.location.href = '/ui/login', 1200);
-            }
-            return r;
-        }
+    // ---- Protege páginas privadas ----
+    function requiereSesion() {
+        if (!localStorage.getItem('token')) { window.location.href = '/ui/login'; return false; }
+        return true;
+    }
 
-        // ---- Extrae mensaje de error legible de una respuesta FastAPI ----
-        function errorDetalle(datos, fallback) {
-            if (!datos) return fallback;
-            if (typeof datos.detail === 'string') return datos.detail;
-            if (Array.isArray(datos.detail) && datos.detail[0]) return datos.detail[0].msg;
-            return fallback;
-        }
-
-        // ---- Protege páginas privadas ----
-        function requiereSesion() {
-            if (!localStorage.getItem('token')) {
-                window.location.href = '/ui/login';
-                return false;
-            }
-            return true;
-        }
-    </script>
-    {% block scripts %}{% endblock %}
+    // ---- Escapa HTML ----
+    function escapar(t) {
+        return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+</script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

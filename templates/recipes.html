@@ -2,50 +2,52 @@
 {% block title %}Recetas - Inventario Recetas IA{% endblock %}
 {% block content %}
 
-<div class="flex-between" style="margin-bottom:1.2rem;">
-    <h2 class="section-title">📖 Mis recetas</h2>
-    <span class="muted" id="saludo"></span>
-</div>
-
-<!-- Generador -->
-<div class="card" style="text-align:center;">
-    <p class="muted" style="margin-bottom:1rem;">La IA creará una receta usando los ingredientes de tu inventario actual.</p>
-    <button class="btn btn-primary btn-lg" id="btn-generar" onclick="generar()">✨ Generar receta con IA</button>
-</div>
+<!-- Encabezado -->
+<header class="mb-stack-lg flex flex-col md:flex-row md:items-end justify-between gap-gutter">
+    <div>
+        <h1 class="font-headline-xl text-headline-xl text-primary mb-2">Mi cocina inteligente</h1>
+        <p class="font-body-lg text-body-lg text-on-surface-variant" id="saludo">Genera recetas con IA a partir de tu inventario y guárdalas.</p>
+    </div>
+    <button id="btn-generar" onclick="generar()" class="bg-secondary-container text-on-secondary-container font-label-bold text-label-bold px-8 py-4 rounded-lg flex items-center justify-center gap-2 shadow-lg hover:brightness-110 transition-all active:scale-95">
+        <span class="material-symbols-outlined icon-fill">auto_awesome</span> Generar receta IA
+    </button>
+</header>
 
 <!-- Receta recién generada -->
-<div id="panel-nueva" class="card" style="display:none; border:2px solid var(--verde-300);">
-    <span class="badge badge-facil" style="background:var(--verde-700); color:white;">✨ Recién generada</span>
-    <div id="contenido-nueva" style="margin-top:0.8rem;"></div>
-</div>
+<section id="panel-nueva" class="hidden mb-stack-lg">
+    <div class="bg-white rounded-2xl card-shadow border-2 border-primary/20 overflow-hidden fade-in">
+        <div class="bg-primary text-on-primary px-6 py-3 flex items-center gap-2">
+            <span class="material-symbols-outlined icon-fill text-tertiary-fixed-dim">auto_awesome</span>
+            <span class="font-label-bold text-label-bold uppercase tracking-wider">Receta recién generada</span>
+        </div>
+        <div id="contenido-nueva" class="p-6"></div>
+    </div>
+</section>
 
-<!-- Guardadas -->
-<div class="card">
-    <h3 style="font-size:1rem; color:var(--gris-700); margin-bottom:0.9rem;">
-        Recetas guardadas <span class="badge badge-count" id="total">0</span>
-    </h3>
-    <div id="lista">
-        <div class="empty"><span class="spinner spinner-verde"></span></div>
+<!-- Recetas guardadas -->
+<div class="bg-white rounded-xl card-shadow p-stack-md border border-outline-variant/30">
+    <div class="flex justify-between items-center mb-stack-md">
+        <h2 class="font-headline-md text-headline-md text-primary">Recetas guardadas</h2>
+        <span class="px-3 py-1 bg-primary-fixed text-on-primary-fixed rounded-full text-xs font-bold" id="total">0</span>
+    </div>
+    <div id="lista" class="flex flex-col gap-gutter">
+        <div class="text-center py-10"><span class="spinner spinner-verde"></span></div>
     </div>
 </div>
 
 {% endblock %}
 {% block scripts %}
 <script>
-    if (!requiereSesion()) { }
-    document.getElementById('saludo').textContent = NOMBRE ? ('Hola, ' + NOMBRE) : '';
+    requiereSesion();
+    if (NOMBRE) document.getElementById('saludo').textContent = 'Hola, ' + NOMBRE + '. Genera recetas con IA a partir de tu inventario.';
 
-    function escapar(t) {
-        return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-    function badgeClase(nivel) {
+    function badgeDificultad(nivel) {
         const n = (nivel || '').toLowerCase();
-        if (n.includes('f')) return 'badge-facil';
-        if (n.includes('m')) return 'badge-medio';
-        return 'badge-dificil';
+        if (n.includes('f')) return 'bg-primary-fixed text-on-primary-fixed';
+        if (n.includes('m')) return 'bg-tertiary-fixed text-on-tertiary-fixed-variant';
+        return 'bg-error-container text-on-error-container';
     }
 
-    // Genera el HTML de estrellas para una receta dada
     function estrellasHTML(recetaId, valor) {
         valor = Math.round(valor || 0);
         const spans = [1,2,3,4,5].map(n =>
@@ -56,26 +58,38 @@
 
     function detalleHTML(rec) {
         return `
-            <div class="flex-between">
-                <h3 style="color:var(--verde-900); font-size:1.25rem;">${escapar(rec.nombre_plato)}</h3>
-                <div style="display:flex; gap:0.5rem; align-items:center;">
-                    <span class="badge ${badgeClase(rec.nivel_dificultad)}">${escapar(rec.nivel_dificultad)}</span>
-                    <span class="muted">⏱ ${escapar(rec.tiempo_estimado)}</span>
+            <div class="flex flex-wrap justify-between items-start gap-2 mb-4">
+                <h3 class="font-headline-md text-headline-md text-on-surface">${escapar(rec.nombre_plato)}</h3>
+                <div class="flex items-center gap-2">
+                    <span class="px-3 py-1 rounded-full text-xs font-bold ${badgeDificultad(rec.nivel_dificultad)}">${escapar(rec.nivel_dificultad)}</span>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-surface-container text-on-surface-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px]">schedule</span>${escapar(rec.tiempo_estimado)}</span>
                 </div>
             </div>
-            <div class="receta-detalle">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-stack-md">
                 <div>
-                    <h4>Ingredientes</h4>
-                    <ul>${rec.ingredientes.map(i => `<li>${escapar(i.nombre)} — ${escapar(i.cantidad)} ${escapar(i.unidad || '')}</li>`).join('')}</ul>
+                    <h4 class="font-label-bold text-label-bold text-primary uppercase tracking-wide mb-2 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[18px]">checklist</span>Ingredientes</h4>
+                    <ul class="space-y-1">
+                        ${rec.ingredientes.map(i => `<li class="flex items-start gap-2 text-body-md text-on-surface-variant">
+                            <span class="material-symbols-outlined text-[18px] text-primary mt-0.5">fiber_manual_record</span>
+                            <span>${escapar(i.nombre)} — ${escapar(i.cantidad)} ${escapar(i.unidad || '')}</span></li>`).join('')}
+                    </ul>
                 </div>
                 <div>
-                    <h4>Preparación</h4>
-                    <ol>${rec.pasos_preparacion.map(p => `<li>${escapar(p)}</li>`).join('')}</ol>
+                    <h4 class="font-label-bold text-label-bold text-primary uppercase tracking-wide mb-2 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[18px]">format_list_numbered</span>Preparación</h4>
+                    <ol class="space-y-2">
+                        ${rec.pasos_preparacion.map((p, i) => `<li class="flex items-start gap-2 text-body-md text-on-surface-variant">
+                            <span class="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-on-primary text-[11px] font-bold flex items-center justify-center mt-0.5">${i+1}</span>
+                            <span>${escapar(p)}</span></li>`).join('')}
+                    </ol>
                 </div>
             </div>
-            <div class="flex-between" style="margin-top:1.1rem; border-top:1px solid var(--gris-100); padding-top:0.9rem;">
-                <span style="font-size:0.9rem; color:var(--gris-700);">Tu calificación: ${estrellasHTML(rec.id, rec.calificacion_promedio)}</span>
-                <button class="btn btn-danger btn-sm" onclick="eliminar(${rec.id})">Eliminar receta</button>
+            <div class="flex flex-wrap justify-between items-center gap-2 mt-stack-md pt-4 border-t border-outline-variant">
+                <span class="text-body-md text-on-surface-variant flex items-center gap-2">Tu calificación: ${estrellasHTML(rec.id, rec.calificacion_promedio)}</span>
+                <button onclick="eliminar(${rec.id})" class="text-on-surface-variant hover:text-error transition-colors flex items-center gap-1 font-label-bold text-label-bold">
+                    <span class="material-symbols-outlined text-[18px]">delete</span> Eliminar</button>
             </div>`;
     }
 
@@ -85,13 +99,13 @@
         btn.innerHTML = '<span class="spinner"></span> Consultando a la IA...';
         const r = await api('/recipes/generate', { method: 'POST' });
         btn.disabled = false;
-        btn.innerHTML = '✨ Generar receta con IA';
+        btn.innerHTML = '<span class="material-symbols-outlined icon-fill">auto_awesome</span> Generar receta IA';
 
         if (r.ok) {
             const rec = await r.json();
-            const panel = document.getElementById('panel-nueva');
             document.getElementById('contenido-nueva').innerHTML = detalleHTML(rec);
-            panel.style.display = 'block';
+            const panel = document.getElementById('panel-nueva');
+            panel.classList.remove('hidden');
             panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
             toast('¡Receta generada!', 'ok');
             cargar();
@@ -103,19 +117,15 @@
 
     async function calificar(recetaId, puntuacion) {
         const r = await api('/recipes/' + recetaId + '/rate', {
-            method: 'POST',
-            body: JSON.stringify({ puntuacion })
+            method: 'POST', body: JSON.stringify({ puntuacion })
         });
         if (r.ok) {
             toast('Calificaste con ' + puntuacion + ' ★', 'ok');
-            // Actualiza todas las filas de estrellas de esa receta en pantalla
             document.querySelectorAll(`.estrellas[data-receta="${recetaId}"]`).forEach(cont => {
                 cont.outerHTML = estrellasHTML(recetaId, puntuacion);
             });
             cargar();
-        } else {
-            toast('No se pudo calificar', 'error');
-        }
+        } else toast('No se pudo calificar', 'error');
     }
 
     async function eliminar(id) {
@@ -123,7 +133,7 @@
         const r = await api('/recipes/' + id, { method: 'DELETE' });
         if (r.ok) {
             toast('Receta eliminada', 'info');
-            document.getElementById('panel-nueva').style.display = 'none';
+            document.getElementById('panel-nueva').classList.add('hidden');
             cargar();
         } else toast('No se pudo eliminar', 'error');
     }
@@ -136,25 +146,32 @@
         const cont = document.getElementById('lista');
 
         if (lista.length === 0) {
-            cont.innerHTML = `<div class="empty"><span class="icon">🍲</span>
-                Aún no tienes recetas.<br>Genera la primera con el botón de arriba.</div>`;
+            cont.innerHTML = `<div class="text-center py-12 text-on-surface-variant">
+                <span class="material-symbols-outlined text-[48px] text-outline-variant">menu_book</span>
+                <p class="mt-2 font-label-bold">Aún no tienes recetas.</p>
+                <p class="text-body-md">Genera la primera con el botón “Generar receta IA”.</p></div>`;
             return;
         }
         cont.innerHTML = lista.map(rec => {
             const prom = rec.calificacion_promedio
-                ? `<span style="color:var(--amarillo); font-weight:700;">★ ${rec.calificacion_promedio}</span> <span class="muted">(${rec.total_calificaciones})</span>`
-                : '<span class="muted">Sin calificar</span>';
+                ? `<span class="flex items-center text-tertiary"><span class="material-symbols-outlined icon-fill text-[18px]" style="color:#ebc246;">star</span><span class="text-xs font-bold ml-1 text-on-surface">${rec.calificacion_promedio}</span></span>`
+                : '<span class="text-xs text-on-surface-variant">Sin calificar</span>';
             return `
-                <details class="receta-card">
-                    <summary>
-                        <span>${escapar(rec.nombre_plato)}</span>
-                        <span style="display:flex; gap:0.6rem; align-items:center;">
-                            <span class="badge ${badgeClase(rec.nivel_dificultad)}">${escapar(rec.nivel_dificultad)}</span>
+                <details class="receta-card group rounded-xl border border-outline-variant/30 hover:border-primary/30 transition-all overflow-hidden">
+                    <summary class="flex items-center justify-between gap-3 p-4 bg-surface-container-low hover:bg-surface-container transition-colors">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-11 h-11 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container flex-shrink-0">
+                                <span class="material-symbols-outlined">skillet</span>
+                            </div>
+                            <span class="font-label-bold text-label-bold text-on-surface truncate">${escapar(rec.nombre_plato)}</span>
+                        </div>
+                        <div class="flex items-center gap-3 flex-shrink-0">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold ${badgeDificultad(rec.nivel_dificultad)}">${escapar(rec.nivel_dificultad)}</span>
                             ${prom}
-                            <span class="flecha">▼</span>
-                        </span>
+                            <span class="material-symbols-outlined flecha text-on-surface-variant">expand_more</span>
+                        </div>
                     </summary>
-                    <div style="margin-top:0.9rem;">${detalleHTML(rec)}</div>
+                    <div class="p-6">${detalleHTML(rec)}</div>
                 </details>`;
         }).join('');
     }

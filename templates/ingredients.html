@@ -2,84 +2,125 @@
 {% block title %}Ingredientes - Inventario Recetas IA{% endblock %}
 {% block content %}
 
-<div class="flex-between" style="margin-bottom:1.2rem;">
-    <h2 class="section-title">🥕 Mi inventario</h2>
-    <span class="muted" id="saludo"></span>
+<!-- Banner -->
+<div class="relative w-full rounded-2xl overflow-hidden mb-stack-lg bg-primary text-on-primary p-8 md:p-10">
+    <div class="absolute top-0 right-0 w-64 h-64 bg-primary-container/30 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+    <div class="relative z-10 max-w-xl">
+        <h1 class="font-headline-xl text-headline-xl mb-2">Tu despensa inteligente</h1>
+        <p class="font-body-lg text-body-lg opacity-90" id="saludo">Gestiona tus ingredientes y deja que la IA se encargue de la inspiración.</p>
+    </div>
 </div>
 
-<!-- Agregar ingrediente -->
-<div class="card">
-    <h3 style="font-size:1rem; margin-bottom:0.9rem; color:var(--gris-700);">Agregar ingrediente</h3>
-    <form onsubmit="agregar(event)" class="form-ingrediente" style="display:grid; grid-template-columns:2fr 1fr 1.2fr auto; gap:0.7rem; align-items:end;">
-        <div>
-            <label>Nombre</label>
-            <input type="text" id="ing-nombre" required placeholder="Tomate, arroz, pollo..." minlength="2">
-        </div>
-        <div>
-            <label>Cantidad</label>
-            <input type="number" id="ing-cantidad" required min="0.01" step="0.01" placeholder="2">
-        </div>
-        <div>
-            <label>Unidad</label>
-            <select id="ing-unidad">
-                <option>unidades</option>
-                <option>gramos</option>
-                <option>kg</option>
-                <option>ml</option>
-                <option>litros</option>
-                <option>tazas</option>
-                <option>cucharadas</option>
-                <option>pizca</option>
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary" id="btn-add">+ Agregar</button>
-    </form>
-</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-stack-lg">
 
-<!-- Lista -->
-<div class="card">
-    <div class="flex-between" style="margin-bottom:0.8rem;">
-        <h3 style="font-size:1rem; color:var(--gris-700);">
-            Disponibles <span class="badge badge-count" id="total">0</span>
-        </h3>
-        <a href="/ui/recipes" class="btn btn-primary btn-sm">Generar receta con IA ✨</a>
-    </div>
-    <div id="lista">
-        <div class="empty"><span class="spinner spinner-verde"></span></div>
-    </div>
+    <!-- Formulario -->
+    <section class="lg:col-span-5">
+        <div class="bg-white p-8 rounded-xl card-shadow sticky top-28">
+            <div class="flex items-center gap-base mb-stack-md">
+                <span class="material-symbols-outlined text-primary text-[32px]">kitchen</span>
+                <h2 class="font-headline-md text-headline-md text-on-surface">Agregar ingrediente</h2>
+            </div>
+            <form onsubmit="agregar(event)" class="space-y-stack-md">
+                <div class="space-y-2">
+                    <label class="font-label-bold text-label-bold text-on-surface-variant block">Nombre del ingrediente</label>
+                    <input id="ing-nombre" type="text" required minlength="2" placeholder="Ej: Tomates cherry"
+                        class="w-full bg-white border border-outline-variant rounded-lg p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"/>
+                </div>
+                <div class="grid grid-cols-2 gap-gutter">
+                    <div class="space-y-2">
+                        <label class="font-label-bold text-label-bold text-on-surface-variant block">Cantidad</label>
+                        <input id="ing-cantidad" type="number" required min="0.01" step="0.01" placeholder="0.0"
+                            class="w-full bg-white border border-outline-variant rounded-lg p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"/>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="font-label-bold text-label-bold text-on-surface-variant block">Unidad</label>
+                        <select id="ing-unidad" class="w-full bg-white border border-outline-variant rounded-lg p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all">
+                            <option>unidades</option><option>gramos</option><option>kg</option>
+                            <option>ml</option><option>litros</option><option>tazas</option>
+                            <option>cucharadas</option><option>pizca</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="btn-add" type="submit" class="w-full bg-primary text-on-primary py-4 rounded-lg font-label-bold text-label-bold shadow-md hover:bg-primary-container transition-all active:scale-95 flex justify-center items-center gap-base">
+                    <span class="material-symbols-outlined">add</span> Añadir al inventario
+                </button>
+                <a href="/ui/recipes" class="w-full bg-secondary-container text-on-secondary-container py-4 rounded-lg font-label-bold text-label-bold shadow-md hover:brightness-105 transition-all active:scale-95 flex justify-center items-center gap-base">
+                    <span class="material-symbols-outlined icon-fill">auto_awesome</span> Generar receta con IA
+                </a>
+            </form>
+        </div>
+    </section>
+
+    <!-- Inventario -->
+    <section class="lg:col-span-7">
+        <div class="bg-white rounded-xl card-shadow p-stack-md border border-outline-variant/30">
+            <div class="flex justify-between items-end mb-stack-md">
+                <div>
+                    <h2 class="font-headline-md text-headline-md text-on-surface">Inventario actual</h2>
+                    <p class="font-body-md text-on-surface-variant" id="contador">Cargando...</p>
+                </div>
+            </div>
+            <div id="lista" class="space-y-stack-sm">
+                <div class="text-center py-10"><span class="spinner spinner-verde"></span></div>
+            </div>
+        </div>
+    </section>
+
 </div>
 
 {% endblock %}
 {% block scripts %}
 <script>
-    if (!requiereSesion()) { } // redirige si no hay token
-    document.getElementById('saludo').textContent = NOMBRE ? ('Hola, ' + NOMBRE) : '';
+    requiereSesion();
+    if (NOMBRE) document.getElementById('saludo').textContent = 'Hola, ' + NOMBRE + '. Gestiona tus ingredientes y genera recetas con IA.';
 
-    function escapar(t) {
-        return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    // Icono según el tipo de ingrediente (heurística simple por nombre)
+    function iconoPara(nombre) {
+        const n = nombre.toLowerCase();
+        if (/(huevo|egg)/.test(n)) return 'egg';
+        if (/(leche|crema|yogur|queso|mantequilla)/.test(n)) return 'water_drop';
+        if (/(pollo|carne|res|cerdo|pescado|salmon|atun)/.test(n)) return 'kebab_dining';
+        if (/(arroz|pasta|harina|pan|avena|trigo|grano)/.test(n)) return 'grain';
+        if (/(espinaca|lechuga|brocoli|acelga|cilantro|albahaca|hierba)/.test(n)) return 'spa';
+        if (/(tomate|manzana|fresa|pimiento|zanahoria|naranja|limon|fruta|verdura)/.test(n)) return 'nutrition';
+        if (/(aceite|vinagre)/.test(n)) return 'oil_barrel';
+        return 'grocery';
     }
 
     async function cargar() {
         const r = await api('/ingredients/');
         if (!r.ok) return;
         const lista = await r.json();
-        document.getElementById('total').textContent = lista.length;
+        document.getElementById('contador').textContent =
+            lista.length === 1 ? 'Tienes 1 ingrediente disponible' : `Tienes ${lista.length} ingredientes disponibles`;
         const cont = document.getElementById('lista');
 
         if (lista.length === 0) {
-            cont.innerHTML = `<div class="empty"><span class="icon">🍽️</span>
-                Tu inventario está vacío.<br>Agrega tu primer ingrediente arriba.</div>`;
+            cont.innerHTML = `<div class="text-center py-12 text-on-surface-variant">
+                <span class="material-symbols-outlined text-[48px] text-outline-variant">restaurant</span>
+                <p class="mt-2 font-label-bold">Tu inventario está vacío.</p>
+                <p class="text-body-md">Agrega tu primer ingrediente con el formulario.</p></div>`;
             return;
         }
-        cont.innerHTML = lista.map(ing => `
-            <div class="row-item">
-                <span>
-                    <strong>${escapar(ing.nombre)}</strong>
-                    <span class="chip">${ing.cantidad} ${escapar(ing.unidad)}</span>
-                </span>
-                <button class="btn btn-danger btn-sm" onclick="eliminar(${ing.id}, '${escapar(ing.nombre).replace(/'/g, "\\'")}')">Eliminar</button>
-            </div>
-        `).join('');
+        cont.innerHTML = lista.map(ing => {
+            const nombre = escapar(ing.nombre);
+            return `
+            <div class="fade-in flex items-center justify-between p-4 rounded-lg hover:bg-surface-bright transition-colors border border-transparent hover:border-outline-variant/40 group">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+                        <span class="material-symbols-outlined text-[26px]">${iconoPara(ing.nombre)}</span>
+                    </div>
+                    <p class="font-label-bold text-label-bold text-on-surface">${nombre}</p>
+                </div>
+                <div class="flex items-center gap-stack-md">
+                    <span class="px-3 py-1 bg-primary-fixed text-on-primary-fixed rounded-full text-xs font-bold whitespace-nowrap">${ing.cantidad} ${escapar(ing.unidad)}</span>
+                    <button onclick="eliminar(${ing.id}, '${nombre.replace(/'/g, "\\'")}')" title="Eliminar"
+                        class="opacity-0 group-hover:opacity-100 transition-opacity text-on-surface-variant hover:text-error">
+                        <span class="material-symbols-outlined">delete</span>
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
     }
 
     async function agregar(e) {

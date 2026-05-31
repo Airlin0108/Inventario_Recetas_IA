@@ -2,49 +2,116 @@
 {% block title %}Acceder - Inventario Recetas IA{% endblock %}
 {% block content %}
 
-<div class="card" style="max-width:430px; margin:1.5rem auto;">
-    <h2 class="section-title" style="text-align:center; margin-bottom:0.3rem;">Bienvenido</h2>
-    <p class="muted" style="text-align:center; margin-bottom:1.2rem;">Inicia sesión o crea tu cuenta para empezar</p>
+<div class="culinary-bg -mx-container-padding -mt-24 pt-32 pb-stack-lg px-container-padding min-h-screen flex items-start justify-center">
+<div class="w-full max-w-[480px] bg-surface-container-lowest rounded-xl card-shadow border border-outline-variant p-stack-lg fade-in">
 
-    <div class="tabs">
-        <button class="tab activa" id="tab-login" onclick="mostrarTab('login')">Iniciar sesión</button>
-        <button class="tab" id="tab-reg" onclick="mostrarTab('registro')">Registrarse</button>
+    <div class="text-center mb-stack-md">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-primary-container rounded-full mb-4">
+            <span class="material-symbols-outlined icon-fill text-on-primary-container text-[32px]">restaurant</span>
+        </div>
+        <h1 class="font-headline-md text-headline-md text-primary mb-1">Inventario Recetas IA</h1>
+        <p class="text-body-md text-on-surface-variant">Tu asistente inteligente en la cocina</p>
+    </div>
+
+    <!-- Pestañas -->
+    <div class="flex gap-1 bg-surface-container p-1 rounded-lg mb-stack-md">
+        <button id="tab-login" onclick="mostrarTab('login')" class="flex-1 py-2.5 rounded-md font-label-bold text-label-bold transition-all bg-surface-container-lowest text-primary shadow-sm">Iniciar sesión</button>
+        <button id="tab-reg" onclick="mostrarTab('registro')" class="flex-1 py-2.5 rounded-md font-label-bold text-label-bold transition-all text-on-surface-variant">Registrarse</button>
     </div>
 
     <!-- LOGIN -->
-    <form id="form-login" onsubmit="login(event)">
-        <label>Correo electrónico</label>
-        <input type="email" id="login-email" required placeholder="tu@correo.com" autocomplete="email">
-        <label>Contraseña</label>
-        <input type="password" id="login-pass" required placeholder="••••••••" autocomplete="current-password">
-        <button type="submit" class="btn btn-primary btn-block" style="margin-top:1.3rem;" id="btn-login">Entrar</button>
+    <form id="form-login" onsubmit="login(event)" class="space-y-stack-md">
+        <div class="space-y-base">
+            <label class="font-label-bold text-label-bold text-on-surface" for="login-email">Correo electrónico</label>
+            <div class="relative">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">mail</span>
+                <input id="login-email" type="email" required autocomplete="email" placeholder="ejemplo@correo.com"
+                    class="w-full pl-10 pr-4 py-3 bg-white border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"/>
+            </div>
+        </div>
+        <div class="space-y-base">
+            <label class="font-label-bold text-label-bold text-on-surface" for="login-pass">Contraseña</label>
+            <div class="relative">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">lock</span>
+                <input id="login-pass" type="password" required autocomplete="current-password" placeholder="••••••••"
+                    class="w-full pl-10 pr-12 py-3 bg-white border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"/>
+                <button type="button" onclick="verPass('login-pass', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined">visibility</span>
+                </button>
+            </div>
+        </div>
+        <button id="btn-login" type="submit" class="w-full bg-primary text-on-primary font-label-bold text-label-bold py-4 rounded-lg hover:bg-primary-container transition-all active:scale-95 flex justify-center items-center gap-2">
+            <span>Entrar</span><span class="material-symbols-outlined">arrow_forward</span>
+        </button>
     </form>
 
     <!-- REGISTRO -->
-    <form id="form-registro" onsubmit="registrar(event)" style="display:none;">
-        <label>Nombre completo</label>
-        <input type="text" id="reg-nombre" required placeholder="Tu nombre" minlength="2" autocomplete="name">
-        <label>Correo electrónico</label>
-        <input type="email" id="reg-email" required placeholder="tu@correo.com" autocomplete="email">
-        <label>Contraseña</label>
-        <input type="password" id="reg-pass" required placeholder="Mínimo 8 caracteres" autocomplete="new-password">
-        <p class="muted" style="margin-top:0.4rem; font-size:0.78rem;">Debe tener al menos 8 caracteres e incluir un número.</p>
-        <button type="submit" class="btn btn-primary btn-block" style="margin-top:1.1rem;" id="btn-reg">Crear cuenta</button>
+    <form id="form-registro" onsubmit="registrar(event)" class="space-y-stack-md hidden">
+        <div class="space-y-base">
+            <label class="font-label-bold text-label-bold text-on-surface" for="reg-nombre">Nombre completo</label>
+            <div class="relative">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">person</span>
+                <input id="reg-nombre" type="text" required minlength="2" autocomplete="name" placeholder="Ej. Juan Pérez"
+                    class="w-full pl-10 pr-4 py-3 bg-white border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"/>
+            </div>
+        </div>
+        <div class="space-y-base">
+            <label class="font-label-bold text-label-bold text-on-surface" for="reg-email">Correo electrónico</label>
+            <div class="relative">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">mail</span>
+                <input id="reg-email" type="email" required autocomplete="email" placeholder="tu@correo.com"
+                    class="w-full pl-10 pr-4 py-3 bg-white border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"/>
+            </div>
+        </div>
+        <div class="space-y-base">
+            <label class="font-label-bold text-label-bold text-on-surface" for="reg-pass">Contraseña</label>
+            <div class="relative">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">lock</span>
+                <input id="reg-pass" type="password" required autocomplete="new-password" placeholder="••••••••"
+                    class="w-full pl-10 pr-12 py-3 bg-white border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"/>
+                <button type="button" onclick="verPass('reg-pass', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined">visibility</span>
+                </button>
+            </div>
+            <p class="text-[12px] text-on-surface-variant/70 italic px-1">Mínimo 8 caracteres, incluyendo un número.</p>
+        </div>
+        <button id="btn-reg" type="submit" class="w-full bg-primary text-on-primary font-label-bold text-label-bold py-4 rounded-lg hover:bg-primary-container transition-all active:scale-95 flex justify-center items-center gap-2">
+            <span>Crear cuenta</span><span class="material-symbols-outlined">arrow_forward</span>
+        </button>
     </form>
+
+</div>
 </div>
 
 {% endblock %}
 {% block scripts %}
 <script>
-    // Si ya hay sesión, ir directo a ingredientes
     if (localStorage.getItem('token')) window.location.href = '/ui/ingredients';
+
+    const tabLogin = document.getElementById('tab-login');
+    const tabReg   = document.getElementById('tab-reg');
+    const activa   = ['bg-surface-container-lowest', 'text-primary', 'shadow-sm'];
+    const inactiva = ['text-on-surface-variant'];
 
     function mostrarTab(tab) {
         const esLogin = tab === 'login';
-        document.getElementById('form-login').style.display    = esLogin ? 'block' : 'none';
-        document.getElementById('form-registro').style.display = esLogin ? 'none'  : 'block';
-        document.getElementById('tab-login').classList.toggle('activa', esLogin);
-        document.getElementById('tab-reg').classList.toggle('activa', !esLogin);
+        document.getElementById('form-login').classList.toggle('hidden', !esLogin);
+        document.getElementById('form-registro').classList.toggle('hidden', esLogin);
+        tabLogin.classList.toggle('bg-surface-container-lowest', esLogin);
+        tabLogin.classList.toggle('text-primary', esLogin);
+        tabLogin.classList.toggle('shadow-sm', esLogin);
+        tabLogin.classList.toggle('text-on-surface-variant', !esLogin);
+        tabReg.classList.toggle('bg-surface-container-lowest', !esLogin);
+        tabReg.classList.toggle('text-primary', !esLogin);
+        tabReg.classList.toggle('shadow-sm', !esLogin);
+        tabReg.classList.toggle('text-on-surface-variant', esLogin);
+    }
+
+    function verPass(id, btn) {
+        const inp = document.getElementById(id);
+        const ver = inp.type === 'password';
+        inp.type = ver ? 'text' : 'password';
+        btn.querySelector('span').textContent = ver ? 'visibility_off' : 'visibility';
     }
 
     async function login(e) {
@@ -53,8 +120,7 @@
         btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Entrando...';
         try {
             const resp = await fetch('/auth/login', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     email: document.getElementById('login-email').value.trim(),
                     password: document.getElementById('login-pass').value
@@ -68,11 +134,11 @@
                 setTimeout(() => window.location.href = '/ui/ingredients', 600);
             } else {
                 toast(errorDetalle(datos, 'Credenciales incorrectas'), 'error');
-                btn.disabled = false; btn.textContent = 'Entrar';
+                btn.disabled = false; btn.innerHTML = '<span>Entrar</span><span class="material-symbols-outlined">arrow_forward</span>';
             }
         } catch (err) {
             toast('No se pudo conectar con el servidor', 'error');
-            btn.disabled = false; btn.textContent = 'Entrar';
+            btn.disabled = false; btn.innerHTML = '<span>Entrar</span><span class="material-symbols-outlined">arrow_forward</span>';
         }
     }
 
@@ -83,8 +149,7 @@
         const email = document.getElementById('reg-email').value.trim();
         try {
             const resp = await fetch('/auth/register', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     nombre:   document.getElementById('reg-nombre').value.trim(),
                     email:    email,
@@ -96,14 +161,14 @@
                 toast('Cuenta creada con éxito. Ya puedes iniciar sesión.', 'ok');
                 document.getElementById('form-registro').reset();
                 mostrarTab('login');
-                document.getElementById('login-email').value = email; // pre-rellena el correo
+                document.getElementById('login-email').value = email;
             } else {
                 toast(errorDetalle(datos, 'No se pudo crear la cuenta'), 'error');
             }
         } catch (err) {
             toast('No se pudo conectar con el servidor', 'error');
         } finally {
-            btn.disabled = false; btn.textContent = 'Crear cuenta';
+            btn.disabled = false; btn.innerHTML = '<span>Crear cuenta</span><span class="material-symbols-outlined">arrow_forward</span>';
         }
     }
 </script>
