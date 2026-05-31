@@ -19,9 +19,15 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+# Orígenes permitidos para CORS. En producción se definen en la variable
+# CORS_ORIGINS (separados por comas, ej: "https://midominio.com").
+# Si queda vacía no se permite ningún origen cruzado: la interfaz web se sirve
+# desde el mismo origen que la API, por lo que no necesita CORS para funcionar.
+_cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

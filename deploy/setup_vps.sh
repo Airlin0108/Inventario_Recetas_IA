@@ -1,6 +1,10 @@
 #!/bin/bash
-# Script de configuracion inicial para VPS Ubuntu 22.04
-# Uso: bash setup_vps.sh
+# =====================================================================
+# Configuracion inicial de un VPS Ubuntu 22.04 para desplegar la app.
+# SSL automatico mediante Caddy (no requiere Certbot ni Nginx).
+#
+# Uso (como root):  bash setup_vps.sh
+# =====================================================================
 
 set -e
 
@@ -8,7 +12,7 @@ echo "==> Actualizando paquetes del sistema..."
 apt-get update && apt-get upgrade -y
 
 echo "==> Instalando Docker y Docker Compose..."
-apt-get install -y ca-certificates curl gnupg
+apt-get install -y ca-certificates curl gnupg git
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
@@ -17,26 +21,42 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.
 apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
-echo "==> Instalando Nginx y Certbot..."
-apt-get install -y nginx certbot python3-certbot-nginx
+echo "==> Configurando firewall (UFW)..."
+apt-get install -y ufw
+ufw allow OpenSSH
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw --force enable
 
 echo "==> Clonando el repositorio..."
-git clone https://github.com/Airlin0108/Inventario_Recetas_IA.git /app
-cd /app
+git clone https://github.com/Airlin0108/Inventario_Recetas_IA.git /opt/inventario-recetas
+cd /opt/inventario-recetas
 
-echo "==> Creando archivo .env (completar manualmente)..."
+echo "==> Creando archivo .env a partir de la plantilla..."
 cp .env.example .env
-echo "IMPORTANTE: edita /app/.env con tus credenciales antes de continuar"
 
-echo "==> Copiando configuracion de Nginx..."
-cp deploy/nginx.conf /etc/nginx/sites-available/inventario-recetas
-ln -sf /etc/nginx/sites-available/inventario-recetas /etc/nginx/sites-enabled/
-nginx -t && systemctl reload nginx
+cat <<'MSG'
 
-echo "==> Obteniendo certificado SSL con Certbot..."
-echo "Ejecuta manualmente: certbot --nginx -d tu-dominio.com"
+============================================================
+ SIGUIENTE PASO MANUAL — edita el archivo .env:
 
-echo "==> Levantando contenedores Docker..."
-echo "Ejecuta: cd /app && docker compose up -d --build"
+   nano /opt/inventario-recetas/.env
 
-echo "==> Configuracion base completada."
+ Define obligatoriamente:
+   - DOMAIN              (tu dominio, ej: recetas.midominio.com)
+   - DATABASE_PASSWORD   (genera: openssl rand -base64 24)
+   - SECRET_KEY          (genera: openssl rand -hex 32)
+   - OPENROUTER_API_KEY  (tu clave de https://openrouter.ai/keys)
+
+ Asegurate de que tu dominio (registro DNS tipo A) apunte
+ a la IP publica de este servidor ANTES de levantar Caddy.
+
+ Luego levanta todo en produccion con:
+
+   cd /opt/inventario-recetas
+   docker compose -f docker-compose.prod.yml up -d --build
+
+ Caddy obtendra el certificado SSL automaticamente.
+============================================================
+
+MSG

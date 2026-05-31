@@ -1,0 +1,61 @@
+# =====================================================================
+# Despliegue de PRODUCCION (VPS con dominio y SSL automatico via Caddy)
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Requiere en el .env: DOMAIN, DATABASE_PASSWORD, SECRET_KEY, OPENROUTER_API_KEY
+# A diferencia del compose de desarrollo, ni la BD ni la app exponen puertos
+# al exterior: solo Caddy publica los puertos 80 y 443.
+# =====================================================================
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: inventario_recetas_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Define DATABASE_PASSWORD en el .env}
+      POSTGRES_DB: ${DATABASE_NAME:-inventario_recetas}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Sin "ports": la base de datos solo es accesible por la red interna de Docker.
+
+  app:
+    build: .
+    container_name: inventario_recetas_app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${DATABASE_USER:-postgres}:${DATABASE_PASSWORD}@db:5432/${DATABASE_NAME:-inventario_recetas}
+    depends_on:
+      db:
+        condition: service_healthy
+    # Sin "ports": solo Caddy accede a la app por la red interna.
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: inventario_recetas_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?Define DOMAIN en el .env (ejemplo recetas.midominio.com)}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
